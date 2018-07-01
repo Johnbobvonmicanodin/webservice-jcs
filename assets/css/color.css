@@ -1,0 +1,71 @@
+/*
+#1 color = #f65327; ff4100
+#2 color = #f04e22; ec3d01
+*/
+
+a:hover,
+a:focus {
+    color: #ff4100;
+}
+
+.circled {
+	background: #ff4100;
+}
+
+.con1 > div, .con2 > div, .con3 > div { 
+	background-color: #ff4100;
+}
+
+.scrollup:hover {
+	background: #ff4100;
+}
+
+
+/* service */
+.service-icon span {
+	color: #ff4100;
+}
+
+
+/* button */
+.btn-skin {
+  background-color: #ff4100;
+  border-color: #ff4100;
+}
+.btn-radio-skin {
+	background-color: #ffffff;
+	border-color: #ff4100;
+}
+.btn-radio-skin.active {
+	background-color: #ff4100;
+	border-color: #ff4100;
+}
+
+
+/* top */
+.top-area {
+	background: #ec3d01;
+}
+
+/* menu */
+
+.navbar-custom ul.nav ul.dropdown-menu li a:hover {
+	color: #ec3d01;
+}
+.navbar-custom.top-nav-collapse .nav li a:hover,
+.navbar-custom .nav li a:hover,
+.navbar-custom .nav li.active a,.navbar-custom.top-nav-collapse .nav li.active a  {
+    color: #ec3d01;
+}
+
+.bg-skin {
+	background: #ff4100;
+}
+
+.highlight-color {
+	background-color: #ff4100;
+}
+.color {
+	color: #ff4100;
+}
+
