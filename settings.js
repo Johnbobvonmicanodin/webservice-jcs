@@ -15,6 +15,6 @@ exports.url = "http://localhost:4200/#";
 */
 
 //online
-exports.webPort = 80;
+exports.webPort = 82;
 exports.secret = "DWA134AKLKJJ8774323DD";
 exports.url = "http://webservice.jcs-infinity.fr/#";
