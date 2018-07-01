@@ -10,7 +10,7 @@ var	express = require('express'),
 
 const request = require("request");
 
-var api_key = 'RGAPI-be7cee3b-eab7-4204-ae53-c550977066ba';
+var api_key = 'RGAPI-99732377-5a5b-40f3-ac1a-5d5c297cdd87';
 	
 router.get('/champions', function(req, res, next){
 	
