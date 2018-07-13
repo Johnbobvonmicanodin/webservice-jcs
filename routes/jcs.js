@@ -10,7 +10,7 @@ var	express = require('express'),
 
 const request = require("request");
 
-var api_key = 'RGAPI-78eacb3c-d7ff-438b-942f-d0c5d5f9ea1c';
+var api_key = 'RGAPI-d406a073-e3ad-45e7-a6ba-21ec2e621c90';
 	
 router.get('/champions', function(req, res, next){
 	
@@ -60,6 +60,7 @@ router.post('/gamedata', function(req, res){
 				winteam.push({jou_id: joueur.jou_id, jou_name: joueur.jou_name});
 			});
 				connection.query('select jou_id, jou_name from jcs_joueur where jou_teamid = ?',[teaml],  function(err, data){
+					connection.release();
 					data.forEach(joueur => {
 						loseteam.push({jou_id: joueur.jou_id, jou_name: joueur.jou_name});
 						
@@ -182,6 +183,7 @@ router.post('/putgamedata', function(req, res){
 		var gamewin = req.body.gamewin; var gamelose = req.body.gamelose; var duree = req.body.duree; var idteamw = req.body.idteamw; var idteaml = req.body.idteaml;
 		var ligue = req.body.ligue; var saison = req.body.saison; var idgame = req.body.idgame; var banswin = req.body.banswin; var banslose = req.body.banslose; var semaine = req.body.semaine;
 		var idgame = parseInt(idgame);
+		var lien = req.body.lien;
 		var idmatchbase = 0;
 		var goldW = 0; var goldP = 0; var killsW = 0; var killsP = 0;
 		var date = new Date();
@@ -211,16 +213,16 @@ router.post('/putgamedata', function(req, res){
 				killsP = killsP + stats.kills;
 			});
 			
-			connection.query('insert into jcs_match (mat_idriot, mat_idgagnant, mat_idperdant, mat_duree, gold_gagnant, gold_perdant, kills_gagnant, kills_perdant, date_match, ma_ligue, ma_saison, ma_semaine) values (?,?,?,?,?,?,?,?,?,?,?,?)',
-			[idgame, idteamw, idteaml, duree, goldW, goldP, killsW, killsP, date, ligue, saison, semaine], function(err, data){
+			connection.query('insert into jcs_match (mat_idriot, mat_link, mat_idgagnant, mat_idperdant, mat_duree, gold_gagnant, gold_perdant, kills_gagnant, kills_perdant, date_match, ma_ligue, ma_saison, ma_semaine) values (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+			[idgame, lien, idteamw, idteaml, duree, goldW, goldP, killsW, killsP, date, ligue, saison, semaine], function(err, data){
 				if(!err){
 					connection.query('select mat_id from jcs_match where mat_idriot = ?',[idgame], function(err, rows){
 						if(!err){
 							idmatchbase = rows[0].mat_id;
 							
 							gamewin.forEach(stats => {		
-								connection.query('insert into jcs_statsjpm (id_match, nom_joueur, champion, kills, deaths, assists, degats, golds, farm, visions, poste, saison) values (?,?,?,?,?,?,?,?,?,?,?,?)',
-								[idmatchbase, stats.player, stats.champion, stats.kills, stats.deaths, stats.assists, stats.damage, stats.gold, stats.farm, stats.visions, stats.role, saison],function(err, donnee){
+								connection.query('insert into jcs_statsjpm (id_match, nom_joueur, champion, kills, deaths, assists, degats, golds, farm, visions, poste, match_temps, saison) values (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+								[idmatchbase, stats.player, stats.champion, stats.kills, stats.deaths, stats.assists, stats.damage, stats.gold, stats.farm, stats.visions, stats.role, duree, saison],function(err, donnee){
 									if(!err){
 										//oui
 									}else{
@@ -230,8 +232,8 @@ router.post('/putgamedata', function(req, res){
 							});
 							
 							gamelose.forEach(stats => {
-								connection.query('insert into jcs_statsjpm (id_match, nom_joueur, champion, kills, deaths, assists, degats, golds, farm, visions, poste, saison) values (?,?,?,?,?,?,?,?,?,?,?,?)',
-								[idmatchbase, stats.player, stats.champion, stats.kills, stats.deaths, stats.assists, stats.damage, stats.gold, stats.farm, stats.visions, stats.role, saison],function(err, donnee){
+								connection.query('insert into jcs_statsjpm (id_match, nom_joueur, champion, kills, deaths, assists, degats, golds, farm, visions, poste, match_temps, saison) values (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+								[idmatchbase, stats.player, stats.champion, stats.kills, stats.deaths, stats.assists, stats.damage, stats.gold, stats.farm, stats.visions, stats.role, duree, saison],function(err, donnee){
 									if(!err){
 										//oui
 									}else{
@@ -307,6 +309,68 @@ router.post('/putgamedata', function(req, res){
 		res.status(200).send(JSON.stringify(response));
 	}
 	
+});
+
+
+router.get('/listegames', function(req, res, next){
+	
+	mysqlLib.getConnection(function(err, connection){
+			if (err) {
+				res.json({"code" : 100, "status" : "Error in connection database : "+err});
+				return;
+			}
+		
+		connection.query('select * from jcs_match order by mat_id desc limit 10', function(err, data){
+			connection.release();
+			if(err){
+					console.log('erreur selection');
+			}
+			else
+			{
+				res.json(data);
+			}
+		});
+		
+	});
+});
+
+
+router.post('/deletegame', function(req, res, next){
+	
+	var response = [];
+	
+	if(typeof req.body.idgame !== 'undefined'){
+		
+		var id = req.body.idgame;
+		
+		mysqlLib.getConnection(function(err, connection){
+			if (err) {
+				res.json({"code" : 100, "status" : "Error in connection database : "+err});
+				return;
+			}
+		
+			connection.query('delete from jcs_banns where id_match = ?',[id], function(err, data){		
+			if(!err){
+					connection.query('delete from jcs_statsjpm where id_match = ?',[id], function(err, data){
+						if(!err){
+							connection.query('delete from jcs_match where mat_id = ?',[id], function(err, data){
+							connection.release();
+							if(!err){
+								res.json({"sucess":"oui"});
+							}
+							});
+						}
+					});
+			}
+			});
+			
+		});
+	}
+	else{
+		response.push({'result' : 'error', 'msg' : 'Please fill required details'});
+		res.setHeader('Content-Type', 'application/json');
+		res.status(200).send(JSON.stringify(response));
+	}	
 });
 
  router.get('/test', function(req, res, next){
