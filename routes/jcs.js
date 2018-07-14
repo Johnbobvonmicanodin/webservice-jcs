@@ -10,7 +10,7 @@ var	express = require('express'),
 
 const request = require("request");
 
-var api_key = 'RGAPI-d406a073-e3ad-45e7-a6ba-21ec2e621c90';
+//var api_key = 'RGAPI-d406a073-e3ad-45e7-a6ba-21ec2e621c90';
 	
 router.get('/champions', function(req, res, next){
 	
@@ -47,13 +47,21 @@ router.post('/gamedata', function(req, res){
 		var losebans = [];
 		var stringData = [];
 		
-		var URL = 'https://euw1.api.riotgames.com/lol/match/v3/matches/'+id+'?api_key=' + api_key;
+		//var URL = 'https://euw1.api.riotgames.com/lol/match/v3/matches/'+id+'?api_key=' + api_key;
 		
 		mysqlLib.getConnection(function(err, connection){
 			if (err) {
 				res.json({"code" : 100, "status" : "Error in connection database : "+err});
 				return;
 			}
+		
+		
+		connection.query("select param_valeur from jcs_parametre where param_libelle = 'cle api riot'", function(err, param){
+		
+		if(!err){
+			var api_key = param[0].param_valeur;
+			
+			var URL = 'https://euw1.api.riotgames.com/lol/match/v3/matches/'+id+'?api_key=' + api_key;
 		
 		connection.query('select jou_id, jou_name from jcs_joueur where jou_teamid = ?',[teamw],  function(err, rows){
 			rows.forEach(joueur => {
@@ -162,6 +170,14 @@ router.post('/gamedata', function(req, res){
 					});
 				});
 				
+		});
+		
+		}
+		else
+		{
+			res.json({"sucess":"non"});
+		}
+		
 		});
 		
 		});
@@ -372,6 +388,36 @@ router.post('/deletegame', function(req, res, next){
 		res.status(200).send(JSON.stringify(response));
 	}	
 });
+
+
+router.post('/updateapi', function(req, res, next){
+	var response = [];
+	
+	if(typeof req.body.cleapi !== 'undefined'){
+		var api = req.body.cleapi;
+		
+		mysqlLib.getConnection(function(err, connection){
+			if (err) {
+				res.json({"code" : 100, "status" : "Error in connection database : "+err});
+				return;
+			}
+			
+			connection.query("update jcs_parametre set param_valeur = ? where param_libelle = 'cle api riot'",[api], function(err, data){		
+			connection.release();
+			if(!err){
+				res.json({"sucess":"oui"});
+			}
+			});
+			
+		});
+	}
+	else{
+		response.push({'result' : 'error', 'msg' : 'Please fill required details'});
+		res.setHeader('Content-Type', 'application/json');
+		res.status(200).send(JSON.stringify(response));
+	}	
+});
+
 
  router.get('/test', function(req, res, next){
 	
