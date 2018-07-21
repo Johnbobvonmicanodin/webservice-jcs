@@ -11,15 +11,6 @@ const pool      =    mysql.createPool({
     debug    :  false
   });
 
-/*const pool      =    mysql.createPool({
-    connectionLimit : 100, //important
-    host     : '149.255.137.161',
-    user     : 'ehpadmysql',
-    password : '!ehpadmysql;2017',
-    database : 'ehpad',
-    debug    :  false
-  });*/
-
   exports.getConnection = function(callback) {
   pool.getConnection(function(err, conn) {
     if(err) {

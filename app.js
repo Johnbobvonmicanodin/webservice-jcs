@@ -26,6 +26,7 @@ var jwtCheck = jwtAuth({
 
 // Incllusion des models
 var jcs = require('./routes/jcs');
+var user = require('./routes/user');
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -103,6 +104,7 @@ app.use(function(req, res, next) {
 });
 
 app.use('/jcs', jcs);
+app.use('/user', user);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
