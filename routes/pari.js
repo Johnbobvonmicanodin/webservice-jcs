@@ -61,7 +61,7 @@ router.post('/mesparis', function(req, res, next){
                     return;
 				}
 				
-				connection.query('SELECT * FROM jcs_parijoueur WHERE id_joueur = ? ORDER BY id_parij DESC',[id], function(err, result) {
+				connection.query('SELECT * FROM jcs_parijoueur p INNER JOIN jcs_pari pa ON pa.par_id = p.id_pari_origine WHERE p.id_joueur = ? ORDER BY p.id_parij DESC',[id], function(err, result) {
 					connection.release();
 					if (!err) {				
 						res.json(result);						
@@ -130,6 +130,60 @@ router.post('/parisencours', function(req, res, next){
 				}
 				
 				connection.query('SELECT * FROM jcs_pari WHERE par_date_fin <= NOW() ORDER BY par_idmatch DESC', function(err, result) {
+					connection.release();
+					if (!err) {				
+						res.json(result);						
+					}      
+					else {
+						res.status(200).send({code:200, error: "erreur"});
+					}
+				});
+			
+				connection.on('error', function(err) {      
+                    res.status(500).send({code:500, error: "Error in connection database : "+err });
+                    return;
+				});
+			
+			});	
+});
+
+
+router.post('/parisnonresolu', function(req, res, next){
+
+			mysqlLib.getConnection(function(err,connection) {
+				if (err) {
+                    res.status(500).send({code:500, error: "Error in connection database : "+err });
+                    return;
+				}
+				
+				connection.query("SELECT * FROM jcs_pari WHERE par_solution LIKE 'En attente' ORDER BY par_idmatch DESC", function(err, result) {
+					connection.release();
+					if (!err) {				
+						res.json(result);						
+					}      
+					else {
+						res.status(200).send({code:200, error: "erreur"});
+					}
+				});
+			
+				connection.on('error', function(err) {      
+                    res.status(500).send({code:500, error: "Error in connection database : "+err });
+                    return;
+				});
+			
+			});	
+});
+
+
+router.post('/ajoutpari', function(req, res, next){
+
+			mysqlLib.getConnection(function(err,connection) {
+				if (err) {
+                    res.status(500).send({code:500, error: "Error in connection database : "+err });
+                    return;
+				}
+				
+				connection.query("SELECT * FROM jcs_pari WHERE par_solution LIKE 'En attente' ORDER BY par_idmatch DESC", function(err, result) {
 					connection.release();
 					if (!err) {				
 						res.json(result);						
