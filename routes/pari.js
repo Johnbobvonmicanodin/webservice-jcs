@@ -19,7 +19,7 @@ router.post('/statparis', function(req, res, next){
 			
 			mysqlLib.getConnection(function(err,connection) {
 				if (err) {
-                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    res.status(500).send({code:500, error: "Error in connection database : "+err });
                     return;
 				}
 				
@@ -31,214 +31,167 @@ router.post('/statparis', function(req, res, next){
 										
 					}      
 					else {
-						res.status(200).send({code:200, error: "connexion - Login ou mot de passe incorrect"});
+						res.status(200).send({code:200, error: "erreur"});
 					}
 				});
 			
 				connection.on('error', function(err) {      
-                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    res.status(500).send({code:500, error: "Error in connection database : "+err });
                     return;
 				});
 			
 			});
 		} else {
-            res.status(412).send({code:412, error: "connexion - Tout les paramètres ne sont pas fournis" });
+            res.status(412).send({code:412, error: "Tout les paramètres ne sont pas fournis" });
             return;
 		}
 });	
 
 
-router.post('/inscription', function(req, res, next){
+router.post('/mesparis', function(req, res, next){
 	
 	var response = [];
 	
-	if (typeof req.body.login !== 'undefined' && typeof req.body.passe !== 'undefined'){
-			var login = req.body.login, passe = req.body.passe;
+	if (typeof req.body.id !== 'undefined'){
+			var id = req.body.id;
 							
-			passe = SHA256(passe).toString();
-			
 			mysqlLib.getConnection(function(err,connection) {
 				if (err) {
-                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    res.status(500).send({code:500, error: "Error in connection database : "+err });
                     return;
 				}
 				
-				connection.query('INSERT INTO jcs_utilisateur (uti_login, uti_passe, uti_admin) VALUES (?,?,0)',[login, passe], function(err, result) {
+				connection.query('SELECT * FROM jcs_parijoueur WHERE id_joueur = ? ORDER BY id_parij DESC',[id], function(err, result) {
 					connection.release();
-					if (!err) {
-					
-						res.json({
-							"success" : true,			
-						});
-										
+					if (!err) {				
+						res.json(result);						
 					}      
 					else {
-						res.status(200).send({code:200, error: "connexion - Login ou mot de passe incorrect"});
+						res.status(200).send({code:200, error: "erreur"});
 					}
 				});
 			
 				connection.on('error', function(err) {      
-                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    res.status(500).send({code:500, error: "Error in connection database : "+err });
                     return;
 				});
 			
 			});
 		} else {
-            res.status(412).send({code:412, error: "connexion - Tout les paramètres ne sont pas fournis" });
+            res.status(412).send({code:412, error: "Tout les paramètres ne sont pas fournis" });
             return;
 		}
 	
 });
 
-router.post('/modify', function(req, res, next){
+
+router.post('/mesparisencours', function(req, res, next){
 	
 	var response = [];
 	
-		var id = req.body.id, passe = req.body.passe;
-		
-		mysqlLib.getConnection(function(err,connection) {
-			if (err) {
-				res.json({"code" : 100, "status" : "Error in connection database : "+err});
-				return;
-			}
-				passe = SHA256(passe).toString();
-				
-				connection.query('update jcs_utilisateur set uti_passe = ? where uti_id = ?', [passe, id], function(err, result){
-						if(!err){
-							response.push({'passe' : 'success'});
-						}			
-				});			
-			
-			 res.setHeader('Content-Type', 'application/json');
-             res.status(200).send(JSON.stringify(response));
-		
-		});
-});
-
-
-router.post('/dedans', function(req, res, next){
-	
-	var response = [];
-		
-	if (typeof req.body.login !== 'undefined'){
-			var login = req.body.login;
-				
-			mysqlLib.getConnection(function(err,connection) {
-			if (err) {
-				res.json({"code" : 100, "status" : "Error in connection database : "+err});
-				return;
-			}
-					
-			connection.query('select * from jcs_utilisateur where uti_login = ?'
-			,[login], function(err, result) {				
-				connection.release();
-				if (result.length > 0){		
-					
-					res.json({"login" : false});
-				}
-				else
-				{
-					
-					res.json({"login" : true});
-				}
-			});
-			
-		});
-	} else {
-		response.push({'result' : 'error', 'msg' : 'Please fill required details'});
-		res.setHeader('Content-Type', 'application/json');
-    	res.status(200).send(JSON.stringify(response));
-	}
-});
-
-router.post('/changerlogin', function(req, res, next){	
-	var response = [];
-	
-		if (typeof req.body.login){
-			var login = req.body.login;
+	if (typeof req.body.id !== 'undefined'){
 			var id = req.body.id;
-		
+							
 			mysqlLib.getConnection(function(err,connection) {
-			if (err) {
-				res.json({"code" : 100, "status" : "Error in connection database : "+err});
-				return;
-			}
-		
-				connection.query('update jcs_utilisateur set uti_login = ? where uti_id = ?', [login, id], function(err, result){		
-						if(!err){
-							res.json({"success" : true});
-						}								
-				});				
-			});	
-		}else {
-			response.push({'result' : 'error', 'msg' : 'Please fill required details'});
-			res.setHeader('Content-Type', 'application/json');
-			res.status(200).send(JSON.stringify(response));
+				if (err) {
+                    res.status(500).send({code:500, error: "Error in connection database : "+err });
+                    return;
+				}
+				
+				connection.query('SELECT * FROM jcs_parijoueur WHERE id_joueur = ? AND resolu = 0 ORDER BY id_parij DESC',[id], function(err, result) {
+					connection.release();
+					if (!err) {				
+						res.json(result);						
+					}      
+					else {
+						res.status(200).send({code:200, error: "erreur"});
+					}
+				});
+			
+				connection.on('error', function(err) {      
+                    res.status(500).send({code:500, error: "Error in connection database : "+err });
+                    return;
+				});
+			
+			});
+		} else {
+            res.status(412).send({code:412, error: "Tout les paramètres ne sont pas fournis" });
+            return;
 		}
 });
 
 
-router.post('/listegames', function(req, res, next){
-	
-	mysqlLib.getConnection(function(err, connection){
-			if (err) {
-				res.json({"code" : 100, "status" : "Error in connection database : "+err});
-				return;
-			}
-		
-		connection.query('select * from jcs_match order by mat_id desc limit 10', function(err, data){
-			connection.release();
-			if(err){
-					console.log('erreur selection');
-			}
-			else
-			{
-				res.json(data);
-			}
-		});
-		
-	});
+router.post('/parisencours', function(req, res, next){
+
+			mysqlLib.getConnection(function(err,connection) {
+				if (err) {
+                    res.status(500).send({code:500, error: "Error in connection database : "+err });
+                    return;
+				}
+				
+				connection.query('SELECT * FROM jcs_pari WHERE par_date_fin <= NOW() ORDER BY par_idmatch DESC', function(err, result) {
+					connection.release();
+					if (!err) {				
+						res.json(result);						
+					}      
+					else {
+						res.status(200).send({code:200, error: "erreur"});
+					}
+				});
+			
+				connection.on('error', function(err) {      
+                    res.status(500).send({code:500, error: "Error in connection database : "+err });
+                    return;
+				});
+			
+			});	
 });
 
 
-router.post('/deletegame', function(req, res, next){
+router.post('/parier', function(req, res, next){
+
+	var iduser = req.body.iduser;
+	var idpari = req.body.idpari;
+	var issue = req.body.issue;
+	var cote = req.body.cote;
+	var mise = req.body.mise;
+	var date = new Date();
+	//ajout UTC+2 heure ETE
+	var date = date.addHours(2);
+	var date = date.toISOString().slice(0, 19).replace('T', ' ');
 	
-	var response = [];
-	
-	if(typeof req.body.idgame !== 'undefined'){
+	mysqlLib.getConnection(function(err,connection) {
+		if (err) {
+			res.status(500).send({code:500, error: "Error in connection database : "+err });
+			return;
+		}
 		
-		var id = req.body.idgame;
-		
-		mysqlLib.getConnection(function(err, connection){
-			if (err) {
-				res.json({"code" : 100, "status" : "Error in connection database : "+err});
-				return;
-			}
-		
-			connection.query('delete from jcs_banns where id_match = ?',[id], function(err, data){		
-			if(!err){
-					connection.query('delete from jcs_statsjpm where id_match = ?',[id], function(err, data){
-						if(!err){
-							connection.query('delete from jcs_match where mat_id = ?',[id], function(err, data){
-							connection.release();
-							if(!err){
-								res.json({"sucess":"oui"});
-							}
-							});
-						}
-					});
+		connection.query('INSERT INTO jcs_parijoueur (id_joueur,issue_choisi,cote_pari,mise_pari,date_pari,id_pari_origine)'
+		+' VALUES (?,?,?,?,?,?)',[iduser,issue,cote,mise,date,idpari],function(err, result) {
+			
+			connection.query('UPDATE jcs_statsparij SET nb_pari = nb_pari + 1, argent_actuel = argent_actuel - ?'
+			+' WHERE id_joueur = ?',[mise, iduser], function(err, data){	
+			connection.release();
+			if (!err) {				
+				res.json({"succes":true});						
+			}      
+			else {
+				res.status(200).send({code:200, error: "erreur"});
 			}
 			});
-			
 		});
-	}
-	else{
-		response.push({'result' : 'error', 'msg' : 'Please fill required details'});
-		res.setHeader('Content-Type', 'application/json');
-		res.status(200).send(JSON.stringify(response));
-	}	
+	
+		connection.on('error', function(err) {      
+			res.status(500).send({code:500, error: "Error in connection database : "+err });
+			return;
+		});
+	
+	});	
 });
 
+Date.prototype.addHours= function(h){
+    this.setHours(this.getHours()+h);
+    return this;
+}
 
- 
 module.exports = router;

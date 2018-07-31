@@ -71,13 +71,21 @@ router.post('/inscription', function(req, res, next){
 				}
 				
 				connection.query('INSERT INTO jcs_utilisateur (uti_login, uti_passe, uti_admin) VALUES (?,?,0)',[login, passe], function(err, result) {
-					connection.release();
+					
 					if (!err) {
 					
-						res.json({
-							"success" : true,			
-						});
-										
+						connection.query('SELECT * FROM jcs_utilisateur WHERE uti_login = ?',[login], function(err, data){
+							if(data.length > 0){
+								var id = data[0].uti_id;
+
+								connection.query('INSERT INTO jcs_statsparij (id_joueur) VALUES (?)',[id],function(err, valeur){
+									connection.release();
+									if(!err){
+										res.json(data);
+									}
+								});
+							}
+						});													
 					}      
 					else {
 						res.status(200).send({code:200, error: "connexion - Login ou mot de passe incorrect"});
