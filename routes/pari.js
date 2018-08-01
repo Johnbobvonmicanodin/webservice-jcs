@@ -129,7 +129,7 @@ router.post('/parisencours', function(req, res, next){
                     return;
 				}
 				
-				connection.query('SELECT * FROM jcs_pari WHERE par_date_fin <= NOW() ORDER BY par_idmatch DESC', function(err, result) {
+				connection.query("SELECT * FROM jcs_pari WHERE par_date_fin >= NOW() AND par_solution LIKE 'En attente' ORDER BY par_id DESC", function(err, result) {
 					connection.release();
 					if (!err) {				
 						res.json(result);						
@@ -156,7 +156,7 @@ router.post('/parisnonresolu', function(req, res, next){
                     return;
 				}
 				
-				connection.query("SELECT * FROM jcs_pari WHERE par_solution LIKE 'En attente' ORDER BY par_idmatch DESC", function(err, result) {
+				connection.query("SELECT * FROM jcs_pari WHERE par_solution LIKE 'En attente' ORDER BY par_id ASC", function(err, result) {
 					connection.release();
 					if (!err) {				
 						res.json(result);						
@@ -177,16 +177,25 @@ router.post('/parisnonresolu', function(req, res, next){
 
 router.post('/ajoutpari', function(req, res, next){
 
+			var question = req.body.question;
+			var cote1 = req.body.cote1;
+			var cote2 = req.body.cote2;
+			var choix1 = req.body.issue1;
+			var choix2 = req.body.issue2;
+			var datelimite = req.body.date; 
+
 			mysqlLib.getConnection(function(err,connection) {
 				if (err) {
                     res.status(500).send({code:500, error: "Error in connection database : "+err });
                     return;
 				}
 				
-				connection.query("SELECT * FROM jcs_pari WHERE par_solution LIKE 'En attente' ORDER BY par_idmatch DESC", function(err, result) {
+				connection.query("INSERT INTO jcs_pari (par_idmatch, par_question, par_issue_1, par_issue_2, par_cote_1, par_cote_2"
+				+", par_cote_evo_1, par_cote_evo_2, par_date, par_date_fin) VALUES (0,?,?,?,?,?,?,?,NOW(),?)",
+				[question,choix1,choix2,cote1,cote2,cote1,cote2,datelimite], function(err, result) {
 					connection.release();
 					if (!err) {				
-						res.json(result);						
+						res.json({"succes":true});						
 					}      
 					else {
 						res.status(200).send({code:200, error: "erreur"});
@@ -242,6 +251,75 @@ router.post('/parier', function(req, res, next){
 	
 	});	
 });
+
+
+router.post('/resoudrepari', function(req, res, next){
+
+	var id = req.body.id;
+	var solution = req.body.solution;
+
+	mysqlLib.getConnection(function(err,connection) {
+		if (err) {
+			res.status(500).send({code:500, error: "Error in connection database : "+err });
+			return;
+		}
+
+		connection.query("UPDATE jcs_pari SET par_solution = ? WHERE par_id = ?",[solution, id],function(err, result) {
+			//connection.release();
+			if (!err) {				
+				connection.query("UPDATE jcs_parijoueur SET resolu = 1 WHERE id_pari_origine = ?",[id],function(err, result) {
+					if(!err){
+						connection.query("SELECT * FROM jcs_parijoueur WHERE id_pari_origine = ?",[id], function(err, data){
+							
+							var iterateur = 0;
+
+							if(data.length == 0){							
+								connection.release();
+								res.json({"sucess":true});
+							}
+												
+							for(iterateur; iterateur < data.length; iterateur++){								
+								if(data[iterateur].issue_choisi == solution){								
+									var recette = data[iterateur].cote_pari * data[iterateur].mise_pari;
+									recette =  parseFloat(recette.toFixed(2));
+
+									connection.query("UPDATE jcs_statsparij SET argent_actuel = argent_actuel + ?, nb_win = nb_win + 1 WHERE id_joueur = ?",
+									[recette, data[iterateur].id_joueur],function(err, result){
+										//go					
+									});
+								}
+								else
+								{
+									connection.query("UPDATE jcs_statsparij SET nb_lose = nb_lose + 1 WHERE id_joueur = ?",
+									[data[iterateur].id_joueur],function(err, result){
+										//go					
+									});
+								}
+							}
+
+							if(iterateur >= data.length){
+								connection.release();
+								res.json({"sucess":true});
+							}			
+						
+						});
+					}
+				});				
+			}      
+			else {
+				res.status(200).send({code:200, error: "erreur"});
+			}
+		});
+
+		connection.on('error', function(err) {      
+			res.status(500).send({code:500, error: "Error in connection database : "+err });
+			return;
+		});
+	
+	});	
+	
+});
+
 
 Date.prototype.addHours= function(h){
     this.setHours(this.getHours()+h);
