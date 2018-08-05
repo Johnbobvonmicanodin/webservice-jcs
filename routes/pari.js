@@ -321,6 +321,49 @@ router.post('/resoudrepari', function(req, res, next){
 });
 
 
+router.post('/supprimerpari', function(req, res, next){
+	
+	var id = req.body.id;
+	
+	mysqlLib.getConnection(function(err,connection) {
+		if (err) {
+			res.status(500).send({code:500, error: "Error in connection database : "+err });
+			return;
+		}
+		connection.query("SELECT * FROM jcs_parijoueur WHERE id_pari_origine = ?",[id],function(err, data){	
+			if(data.length > 0){
+				
+				var iterateur = 0;
+				
+				data.forEach(function(item){		
+					connection.query("UPDATE jcs_statsparij SET argent_actuel = argent_actuel + ? WHERE id_joueur = ?",[item.mise_pari,item.id_joueur],function(err, result){					
+						iterateur++;		
+						if(iterateur == data.length)
+						{			
+						connection.query("DELETE FROM jcs_pari WHERE par_id = ?",[id],function(err,result){				
+							connection.query("DELETE FROM jcs_parijoueur WHERE id_pari_origine = ?",[id],function(err,result){
+								connection.release();
+								res.json({"success":true});
+							});
+						});
+						}		
+					});			
+				});
+						
+			}
+			else
+			{
+				connection.query("DELETE FROM jcs_pari WHERE par_id = ?",[id],function(err,result){
+					connection.release();
+					res.json({"success":true});
+				});
+			}
+		});
+	});
+	
+});
+
+
 Date.prototype.addHours= function(h){
     this.setHours(this.getHours()+h);
     return this;
