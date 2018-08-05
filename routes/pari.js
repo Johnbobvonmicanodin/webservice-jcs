@@ -85,6 +85,35 @@ router.post('/mesparis', function(req, res, next){
 });
 
 
+router.post('/listeparieur', function(req, res, next){
+	
+	var response = [];
+							
+			mysqlLib.getConnection(function(err,connection) {
+				if (err) {
+                    res.status(500).send({code:500, error: "Error in connection database : "+err });
+                    return;
+				}
+				
+				connection.query('SELECT * FROM jcs_statsparij p INNER JOIN jcs_utilisateur u ON u.uti_id = p.id_joueur ORDER BY p.argent_actuel-p.argent_refund DESC', function(err, result) {
+					connection.release();
+					if (!err) {				
+						res.json(result);						
+					}      
+					else {
+						res.status(200).send({code:200, error: "erreur"});
+					}
+				});
+			
+				connection.on('error', function(err) {      
+                    res.status(500).send({code:500, error: "Error in connection database : "+err });
+                    return;
+				});
+			
+			});		
+});
+
+
 router.post('/mesparisencours', function(req, res, next){
 	
 	var response = [];

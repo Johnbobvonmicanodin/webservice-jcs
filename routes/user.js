@@ -131,6 +131,42 @@ router.post('/modify', function(req, res, next){
 });
 
 
+router.post('/verifierpasse', function(req, res, next){
+	
+		var response = [];
+				
+		if (typeof req.body.id !== 'undefined' && req.body.passe !== 'undefined'){
+			var id = req.body.id;
+			var passe = req.body.passe;
+		
+			mysqlLib.getConnection(function(err,connection) {
+				if (err) {
+					res.json({"code" : 100, "status" : "Error in connection database : "+err});
+					return;
+				}
+			
+				passe = SHA256(passe).toString();
+			
+				connection.query('select uti_passe from jcs_utilisateur where uti_passe = ? and uti_id = ?'
+				,[passe, id], function(err, result){
+					connection.release();
+					if(result.length > 0){
+						res.json({"passe" : true});
+					}
+					else{
+						res.json({"passe" : false});
+					}
+				});
+			});
+		
+		}else {
+			response.push({'result' : 'error', 'msg' : 'Please fill required details'});
+			res.setHeader('Content-Type', 'application/json');
+			res.status(200).send(JSON.stringify(response));
+		}
+});
+
+
 router.post('/dedans', function(req, res, next){
 	
 	var response = [];
