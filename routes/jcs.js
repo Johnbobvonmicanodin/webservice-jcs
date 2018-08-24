@@ -232,7 +232,7 @@ router.post('/putgamedata', function(req, res){
 			connection.query('insert into jcs_match (mat_idriot, mat_link, mat_idgagnant, mat_idperdant, mat_duree, gold_gagnant, gold_perdant, kills_gagnant, kills_perdant, date_match, ma_ligue, ma_saison, ma_semaine) values (?,?,?,?,?,?,?,?,?,?,?,?,?)',
 			[idgame, lien, idteamw, idteaml, duree, goldW, goldP, killsW, killsP, date, ligue, saison, semaine], function(err, data){
 				if(!err){
-					connection.query('select mat_id from jcs_match where mat_idriot = ?',[idgame], function(err, rows){
+					connection.query('select mat_id from jcs_match where mat_idriot = ? order by mat_id desc',[idgame], function(err, rows){
 						if(!err){
 							idmatchbase = rows[0].mat_id;
 							
@@ -288,15 +288,15 @@ router.post('/putgamedata', function(req, res){
 			});
 			
 			gamewin.forEach(stats => {			
-				connection.query('update jcs_joueur set jou_kills = jou_kills + ?, jou_deaths = jou_deaths + ?, jou_assists = jou_assists + ?, jou_gold = jou_gold + ?, jou_vision = jou_vision + ?, jou_damage = jou_damage + ?, jou_tempsdejeu = jou_tempsdejeu + ? where jou_name = ?',
-				[stats.kills, stats.deaths, stats.assists, stats.gold, stats.visions, stats.damage, duree, stats.player], function(err, data){
+				connection.query('update jcs_joueur set jou_kills = jou_kills + ?, jou_deaths = jou_deaths + ?, jou_assists = jou_assists + ?, jou_gold = jou_gold + ?, jou_vision = jou_vision + ?, jou_damage = jou_damage + ?, jou_tempsdejeu = jou_tempsdejeu + ? where jou_name = ? and jou_saison = ?',
+				[stats.kills, stats.deaths, stats.assists, stats.gold, stats.visions, stats.damage, duree, stats.player, saison], function(err, data){
 					
 				});
 			});
 			
 			gamelose.forEach(stats => {
-				connection.query('update jcs_joueur set jou_kills = jou_kills + ?, jou_deaths = jou_deaths + ?, jou_assists = jou_assists + ?, jou_gold = jou_gold + ?, jou_vision = jou_vision + ?, jou_damage = jou_damage + ?, jou_tempsdejeu = jou_tempsdejeu + ? where jou_name = ?',
-				[stats.kills, stats.deaths, stats.assists, stats.gold, stats.visions, stats.damage, duree, stats.player], function(err, data){
+				connection.query('update jcs_joueur set jou_kills = jou_kills + ?, jou_deaths = jou_deaths + ?, jou_assists = jou_assists + ?, jou_gold = jou_gold + ?, jou_vision = jou_vision + ?, jou_damage = jou_damage + ?, jou_tempsdejeu = jou_tempsdejeu + ? where jou_name = ? and jou_saison = ?',
+				[stats.kills, stats.deaths, stats.assists, stats.gold, stats.visions, stats.damage, duree, stats.player, saison], function(err, data){
 					
 				});
 			});
@@ -365,7 +365,7 @@ router.post('/deletegame', function(req, res, next){
 				return;
 			}
 		
-			connection.query('delete from jcs_banns where id_match = ?',[id], function(err, data){		
+			/*connection.query('delete from jcs_banns where id_match = ?',[id], function(err, data){		
 			if(!err){
 					connection.query('delete from jcs_statsjpm where id_match = ?',[id], function(err, data){
 						if(!err){
@@ -378,7 +378,48 @@ router.post('/deletegame', function(req, res, next){
 						}
 					});
 			}
+			});*/
+
+			connection.query('select * from jcs_match where mat_id = ?',[id], function(err, datam){
+				connection.query('update from jcs_team set nb_match = nb_match-1, nb_victoires = nb_victoires-1 where team_id = ?',[datam[0].mat_idgagnant],function(err, result){
+					connection.query('update from jcs_team set nb_match = nb_match-1 where team_id = ?',[datam[0].mat_idperdant],function(err, result){
+					
+							connection.query('delete from jcs_banns where id_match = ?',[id], function(err, data){	
+								
+								connection.query('select * from jcs_statsjpm where id_match = ?',[id], function(err, data){
+									
+									var iterateur = 0;
+
+									data.forEach(function(item){
+										
+										connection.query('update jcs_joueur set jou_kills = jou_kills - ?, jou_deaths = jou_deaths - ?, jou_assits = jou_assists - ?, jou_gold = jou_gold - ?'
+										+', jou_damage = jou_damage - ?, jou_vision = jou_vision - ?, jou_tempsdejeu = jou_tempsdejeu - ? where jou_name = ?'//and jou_saison = ?'
+										,[item.kills,item.deaths,item.assists,item.golds,item.degats,item.visions,datam[0].mat_duree,item.nom_joueur/*,datam[0].saison*/],function(err, result){
+											iterateur++;		
+											if(iterateur == data.length)
+											{
+												connection.query('delete from jcs_statsjpm where id_match = ?',[id], function(err, data){
+													if(!err){
+														connection.query('delete from jcs_match where mat_id = ?',[id], function(err, data){
+														connection.release();
+														if(!err){
+															res.json({"sucess":"oui"});
+														}
+														});
+													}
+												});
+											}
+										});
+
+									});
+								});
+							});
+						
+					});
+				});
 			});
+
+		
 			
 		});
 	}
