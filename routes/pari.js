@@ -393,6 +393,29 @@ router.post('/supprimerpari', function(req, res, next){
 });
 
 
+router.post('/renflouer', function(req, res, next){
+
+	var id = req.body.id;
+	
+	mysqlLib.getConnection(function(err,connection) {
+		if (err) {
+			res.status(500).send({code:500, error: "Error in connection database : "+err });
+			return;
+		}
+		connection.query("UPDATE jcs_statsparij SET argent_actuel = argent_actuel + 200, nb_refund = nb_refund + 1, argent_refund = argent_refund + 200 WHERE id_joueur = ?",[id],function(err, data){
+			connection.release();
+			if(!err){
+				res.json({"success":true});
+			}
+			else
+			{
+				res.json({"success":false});
+			}
+		});
+	});
+});
+
+
 Date.prototype.addHours= function(h){
     this.setHours(this.getHours()+h);
     return this;
