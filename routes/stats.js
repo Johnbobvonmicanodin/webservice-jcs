@@ -10,23 +10,22 @@ var	express = require('express'),
 
 const request = require("request");
 
-//récupérer les joueurs par saison par kda
-router.post('/listejoueur', function(req, res, next){
+//récupérer les joueurs par saison
+router.post('/listejoueur', function(req, res){
 	
-	var response = [];
-	
-		if (typeof req.body.id !== 'undefined'){
-			var id = req.body.id;
+		if (typeof req.body.saison !== 'undefined'){
 			var saison = req.body.saison;
-			
+
 			mysqlLib.getConnection(function(err,connection) {
 				if (err) {
                     res.status(500).send({code:500, error: "Error in connection database : "+err });
                     return;
 				}
 				
-				connection.query('SELECT j.jou_name, j from jcs_joueur j inner join jcs_statsjpm jp where id_joueur = ?',[id, saison], function(err, result) {
-					connection.release();
+				connection.query('SELECT DISTINCT j.jou_name as pseudo, j.jou_kills as kills, j.jou_deaths as deaths, j.jou_assists as assists, j.jou_gold as gold, j.jou_damage as damage, j.jou_vision as vision,'
+				+ 'j.jou_tempsdejeu as tempsdejeu,(SELECT count(nom_joueur) FROM jcs_statsjpm WHERE saison = ? and nom_joueur = j.jou_name group by nom_joueur) as nbgame '
+				+ 'FROM jcs_joueur j INNER JOIN jcs_statsjpm jp ON j.jou_name = jp.nom_joueur where j.jou_saison = ?', [saison,saison], function(err, result) {
+					connection.release();						
 					if (result.length > 0) {
 							
 						res.json(result);
@@ -52,10 +51,10 @@ router.post('/listejoueur', function(req, res, next){
 
 router.post('/listematchjoueur', function(req, res, next){
 	
-	var response = [];
-	
-	if (typeof req.body.id !== 'undefined'){
-			var id = req.body.id;
+	if (typeof req.body.pseudo !== 'undefined' && typeof req.body.saison !== 'undefined'){
+			var pseudo = req.body.pseudo;
+			var saison = req.body.saison;
+
 							
 			mysqlLib.getConnection(function(err,connection) {
 				if (err) {
@@ -63,7 +62,8 @@ router.post('/listematchjoueur', function(req, res, next){
                     return;
 				}
 				
-				connection.query('SELECT * FROM jcs_parijoueur p INNER JOIN jcs_pari pa ON pa.par_id = p.id_pari_origine WHERE p.id_joueur = ? ORDER BY p.id_parij DESC',[id], function(err, result) {
+				connection.query('SELECT j.id_match, j.nom_joueur, j.champion, j.kills, j.deaths, j.assists, j.degats, j.golds, j.farm, j.visions, j.poste, m.mat_duree, m.ma_ligue' 
+				+' FROM jcs_statsjpm j INNER JOIN jcs_match m ON j.id_match = m.mat_id WHERE j.nom_joueur = ? AND j.saison = ? ORDER BY id_match DESC',[pseudo, saison], function(err, result) {
 					connection.release();
 					if (!err) {				
 						res.json(result);						
