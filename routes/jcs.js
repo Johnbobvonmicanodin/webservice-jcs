@@ -394,6 +394,9 @@ router.post('/deletegame', function(req, res, next){
 										connection.query('update jcs_joueur set jou_kills = jou_kills - ?, jou_deaths = jou_deaths - ?, jou_assists = jou_assists - ?, jou_gold = jou_gold - ?'
 										+', jou_damage = jou_damage - ?, jou_vision = jou_vision - ?, jou_tempsdejeu = jou_tempsdejeu - ? where jou_name = ? and jou_saison = ?'
 										,[item.kills,item.deaths,item.assists,item.golds,item.degats,item.visions,datam[0].mat_duree,item.nom_joueur,datam[0].ma_saison],function(err, result){								
+											if(err){
+												console.log(err);
+											}
 											iterateur++;
 											if(iterateur == data.length)
 											{

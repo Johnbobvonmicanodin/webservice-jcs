@@ -25,7 +25,7 @@ router.post('/connexion', function(req, res, next){
                     return;
 				}
 				
-				connection.query('SELECT uti_login, uti_id, uti_admin from jcs_utilisateur where uti_login = ? and uti_passe = ? limit 1',[login, passe], function(err, result) {
+				connection.query('SELECT uti_login, uti_id, uti_admin, uti_editeur, uti_redacteur from jcs_utilisateur where uti_login = ? and uti_passe = ? limit 1',[login, passe], function(err, result) {
 					connection.release();
 					if (result.length > 0) {
 							
@@ -34,6 +34,8 @@ router.post('/connexion', function(req, res, next){
 							"uti_id" : result[0].uti_id,
 							"uti_login" : result[0].uti_login,
 							"uti_admin" : result[0].uti_admin,
+							"uti_editeur" : result[0].uti_editeur,
+							"uti_redacteur" : result[0].uti_redacteur
 						});
 										
 					}      
