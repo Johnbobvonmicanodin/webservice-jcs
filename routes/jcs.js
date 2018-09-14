@@ -259,8 +259,8 @@ router.post('/putgamedata', function(req, res){
 							});
 							
 							banswin.forEach(champion => {
-								connection.query('insert into jcs_banns (champion, id_team, id_match) values (?,?,?)',
-								[champion, idteamw, idmatchbase],function(err, donnee){
+								connection.query('insert into jcs_banns (champion, id_team, id_match, saison) values (?,?,?,?)',
+								[champion, idteamw, idmatchbase, saison],function(err, donnee){
 									if(!err){
 										//oui
 									}else{
@@ -270,8 +270,8 @@ router.post('/putgamedata', function(req, res){
 							});
 							
 							banslose.forEach(champion => {
-								connection.query('insert into jcs_banns (champion, id_team, id_match) values (?,?,?)',
-								[champion, idteaml, idmatchbase],function(err, donnee){
+								connection.query('insert into jcs_banns (champion, id_team, id_match, saison) values (?,?,?,?)',
+								[champion, idteaml, idmatchbase, saison],function(err, donnee){
 									if(!err){
 										//oui
 									}else{
@@ -462,6 +462,39 @@ router.post('/updateapi', function(req, res, next){
 });
 
 
+router.post('/ajoutjoueur', function(req, res, next){
+	var response = [];
+		
+	if(typeof req.body.pseudo !== 'undefined' && req.body.structure !== 'undefined'){
+		var pseudo = req.body.pseudo;
+		var structure = req.body.structure;
+		var saison = req.body.saison;
+
+		mysqlLib.getConnection(function(err, connection){
+			if (err) {
+				res.json({"code" : 100, "status" : "Error in connection database : "+err});
+				return;
+			}
+
+			connection.query("insert into jcs_joueur (jou_name, jou_teamid, jou_kills, jou_deaths, jou_assists, jou_gold, jou_damage, jou_vision, jou_saison, jou_tempsdejeu)"
+							+ "values (?,?,0,0,0,0,0,0,?,0)",[pseudo, structure, saison], function(err, data){		
+				connection.release();
+				if(!err){
+					res.json({"sucess":"oui"});
+				}
+			});
+				
+		});
+	
+	}
+	else{
+		response.push({'result' : 'error', 'msg' : 'Please fill required details'});
+		res.setHeader('Content-Type', 'application/json');
+		res.status(200).send(JSON.stringify(response));
+	}	
+});
+
+
  router.get('/test', function(req, res, next){
 	
 	var id = '3525332039';
@@ -543,6 +576,7 @@ router.post('/updateapi', function(req, res, next){
 	});
 	 
  });
+
  
 function precisionRound(number, precision) {
   var factor = Math.pow(10, precision);
