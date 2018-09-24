@@ -95,7 +95,7 @@ router.post('/listeparieur', function(req, res, next){
                     return;
 				}
 				
-				connection.query('SELECT * FROM jcs_statsparij p INNER JOIN jcs_utilisateur u ON u.uti_id = p.id_joueur ORDER BY p.argent_actuel-p.argent_refund DESC', function(err, result) {
+				connection.query('SELECT * FROM jcs_statsparij p INNER JOIN jcs_utilisateur u ON u.uti_id = p.id_joueur ORDER BY p.argent_actuel-p.argent_refund+p.argent_encours DESC', function(err, result) {
 					connection.release();
 					if (!err) {				
 						res.json(result);						
@@ -251,7 +251,9 @@ router.post('/parier', function(req, res, next){
 	//ajout UTC+2 heure ETE
 	var date = date.addHours(2);
 	var date = date.toISOString().slice(0, 19).replace('T', ' ');
-	
+
+	if(mise <= 100){
+
 	mysqlLib.getConnection(function(err,connection) {
 		if (err) {
 			res.status(500).send({code:500, error: "Error in connection database : "+err });
@@ -261,8 +263,8 @@ router.post('/parier', function(req, res, next){
 		connection.query('INSERT INTO jcs_parijoueur (id_joueur,issue_choisi,cote_pari,mise_pari,date_pari,id_pari_origine)'
 		+' VALUES (?,?,?,?,?,?)',[iduser,issue,cote,mise,date,idpari],function(err, result) {
 			
-			connection.query('UPDATE jcs_statsparij SET nb_pari = nb_pari + 1, argent_actuel = argent_actuel - ?'
-			+' WHERE id_joueur = ?',[mise, iduser], function(err, data){	
+			connection.query('UPDATE jcs_statsparij SET nb_pari = nb_pari + 1, argent_actuel = argent_actuel - ?, argent_encours = argent_encours + ?'
+			+' WHERE id_joueur = ?',[mise, mise, iduser], function(err, data){	
 			connection.release();
 			if (!err) {				
 				res.json({"succes":true});						
@@ -279,6 +281,11 @@ router.post('/parier', function(req, res, next){
 		});
 	
 	});	
+
+	}
+	else{
+		res.json({"succes":false});	
+	}
 });
 
 
@@ -312,15 +319,15 @@ router.post('/resoudrepari', function(req, res, next){
 									var recette = data[iterateur].cote_pari * data[iterateur].mise_pari;
 									recette =  parseFloat(recette.toFixed(2));
 
-									connection.query("UPDATE jcs_statsparij SET argent_actuel = argent_actuel + ?, nb_win = nb_win + 1 WHERE id_joueur = ?",
-									[recette, data[iterateur].id_joueur],function(err, result){
+									connection.query("UPDATE jcs_statsparij SET argent_actuel = argent_actuel + ?, argent_encours = argent_encours - ?, nb_win = nb_win + 1 WHERE id_joueur = ?",
+									[recette, data[iterateur].mise_pari, data[iterateur].id_joueur],function(err, result){
 										//go					
 									});
 								}
 								else
 								{
-									connection.query("UPDATE jcs_statsparij SET nb_lose = nb_lose + 1 WHERE id_joueur = ?",
-									[data[iterateur].id_joueur],function(err, result){
+									connection.query("UPDATE jcs_statsparij SET nb_lose = nb_lose + 1, argent_encours = argent_encours - ? WHERE id_joueur = ?",
+									[data[iterateur].mise_pari, data[iterateur].id_joueur],function(err, result){
 										//go					
 									});
 								}
@@ -365,7 +372,7 @@ router.post('/supprimerpari', function(req, res, next){
 				var iterateur = 0;
 				
 				data.forEach(function(item){		
-					connection.query("UPDATE jcs_statsparij SET argent_actuel = argent_actuel + ? WHERE id_joueur = ?",[item.mise_pari,item.id_joueur],function(err, result){					
+					connection.query("UPDATE jcs_statsparij SET argent_actuel = argent_actuel + ?, argent_encours = argent_encours - ?, nb_pari = nb_pari - 1 WHERE id_joueur = ?",[item.mise_pari, item.mise_pari, item.id_joueur],function(err, result){					
 						iterateur++;		
 						if(iterateur == data.length)
 						{			
