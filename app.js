@@ -11,9 +11,13 @@ var settings      = require('./settings'),        // Fichier de config
     app           = express(),
     cluster       = require("cluster"),
     fs            = require('fs');
+    ipfilter = require('express-ipfilter').IpFilter;
 
 var pjson = require('./package.json');
 var errDomain = require('domain');
+
+//IP whitelist
+var ips = ['::1'];
 
 const mysql = require('mysql');   // MYSQL CONNECTOR
 
@@ -38,6 +42,8 @@ app.set('view engine', 'pug');
 // uncomment after placing your favicon in /public
 app.use(favicon(path.join(__dirname, 'public', 'JCSLOGOFINAL.ico')));
 
+//utilise ip filter
+app.use(ipfilter(ips, {mode: 'allow', log: false}));
 
 //app.use(logger('dev'));
 /*app.use(bodyParser.json());
