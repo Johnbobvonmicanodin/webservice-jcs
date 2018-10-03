@@ -217,4 +217,110 @@ router.post('/modifierarticle', function(req, res, next){
 });
 
 
+router.post('/deletecommentaire', function(req, res, next){
+
+
+	if (typeof req.body.id !== 'undefined'){
+		var id = req.body.id;
+
+	mysqlLib.getConnection(function(err,connection) {
+		if (err) {
+			res.status(500).send({code:500, error: "Error in connection database : "+err });
+			return;
+		}
+		
+		connection.query('DELETE FROM jcs_commentaire WHERE id_com = ?',[id],function(err, result) {
+			connection.release();
+			if (!err) {				
+				res.json({'success':true});						
+			}      
+			else {
+				res.status(200).send({code:200, error: "erreur"});
+			}
+		});
+	
+		connection.on('error', function(err) {      
+			res.status(500).send({code:500, error: "Error in connection database : "+err });
+			return;
+		});
+	
+	});
+	} else {
+		res.status(412).send({code:412, error: "Tout les paramètres ne sont pas fournis" });
+		return;
+	}
+});
+
+
+router.post('/ajoutcommentaire', function(req, res){
+	
+	if (typeof req.body.auteur !== 'undefined'){
+		var id_art = req.body.id;
+		var contenu = req.body.contenu;
+		var auteur = req.body.auteur;
+	
+		var date = new Date();
+		//ajout UTC+2 heure ETE
+		var date = date.addHours(2);
+		var date = date.toISOString().slice(0, 19).replace('T', ' ');
+
+		mysqlLib.getConnection(function(err,connection) {
+			if (err) {
+				res.status(500).send({code:500, error: "Error in connection database : "+err });
+				return;
+			}
+			
+			connection.query('INSERT INTO jcs_commentaire (id_art, nom_auteur, contenu_com, date_com) VALUES (?,?,?,?)', [id_art,auteur,contenu,date], function(err, result) {
+				connection.release();						
+				if (!err) {
+			
+					res.json({'success':true});
+				}      
+				else {
+					res.status(200).send({code:200, error: "erreur"});
+				}
+			});
+		
+			connection.on('error', function(err) {      
+				res.status(500).send({code:500, error: "Error in connection database : "+err });
+				return;
+			});
+		
+		});
+	} else {
+		res.status(412).send({code:412, error: "Tout les paramètres ne sont pas fournis" });
+		return;
+	}
+});	
+
+
+router.post('/getallcom', function(req, res, next){
+
+	mysqlLib.getConnection(function(err,connection) {
+		if (err) {
+			res.status(500).send({code:500, error: "Error in connection database : "+err });
+			return;
+		}
+
+		var id_art = req.body.id;
+		
+		connection.query('SELECT * FROM jcs_commentaire WHERE id_art = ? ORDER BY id_com DESC',[id_art],function(err, result) {
+			connection.release();
+			if (!err) {				
+				res.json(result);						
+			}      
+			else {
+				res.status(200).send({code:200, error: "erreur"});
+			}
+		});
+	
+		connection.on('error', function(err) {      
+			res.status(500).send({code:500, error: "Error in connection database : "+err });
+			return;
+		});
+	
+	});
+});
+
+
 module.exports = router;

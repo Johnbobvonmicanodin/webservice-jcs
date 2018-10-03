@@ -17,7 +17,7 @@ var pjson = require('./package.json');
 var errDomain = require('domain');
 
 //IP whitelist
-var ips = ['::1'];
+//var ips = ['::1'];
 
 const mysql = require('mysql');   // MYSQL CONNECTOR
 
@@ -43,7 +43,7 @@ app.set('view engine', 'pug');
 app.use(favicon(path.join(__dirname, 'public', 'JCSLOGOFINAL.ico')));
 
 //utilise ip filter
-app.use(ipfilter(ips, {mode: 'allow', log: false}));
+//app.use(ipfilter(ips, {mode: 'allow', log: true}));
 
 //app.use(logger('dev'));
 /*app.use(bodyParser.json());
