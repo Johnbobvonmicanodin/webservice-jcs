@@ -30,3 +30,5 @@
 .DS_Store
 Thumbs.db
 settings.js
+_.jcs-infinity.fr_private_key.key
+jcs-infinity.fr_ssl_certificate.cer
