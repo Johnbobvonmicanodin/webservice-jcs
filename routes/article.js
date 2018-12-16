@@ -13,7 +13,7 @@ const request = require("request");
 //récupérer les joueurs par saison
 router.post('/ajoutarticle', function(req, res){
 	
-		if (typeof req.body.auteur !== 'undefined'){
+		if (typeof req.body.auteur !== 'undefined' && req.body.key == settings.codeAdmin){
 			var titre = req.body.titre;
 			var contenu = req.body.contenu;
 			var auteur = req.body.auteur;
@@ -109,7 +109,7 @@ router.post('/getallarticle', function(req, res, next){
 router.post('/deletearticle', function(req, res, next){
 
 
-	if (typeof req.body.id !== 'undefined'){
+	if (typeof req.body.id !== 'undefined' && req.body.key == settings.codeAdmin){
 		var id = req.body.id;
 
 	mysqlLib.getConnection(function(err,connection) {
@@ -144,7 +144,7 @@ router.post('/deletearticle', function(req, res, next){
 router.post('/activerarticle', function(req, res, next){
 
 
-	if (typeof req.body.id !== 'undefined'){
+	if (typeof req.body.id !== 'undefined' && req.body.key == settings.codeAdmin){
 		var id = req.body.id;
 
 	mysqlLib.getConnection(function(err,connection) {
@@ -179,7 +179,7 @@ router.post('/activerarticle', function(req, res, next){
 router.post('/modifierarticle', function(req, res, next){
 
 
-	if (typeof req.body.id !== 'undefined'){
+	if (typeof req.body.id !== 'undefined' && req.body.key == settings.codeAdmin){
 		var id = req.body.id;
 		var titre = req.body.titre;
 		var contenu = req.body.contenu;
@@ -220,7 +220,7 @@ router.post('/modifierarticle', function(req, res, next){
 router.post('/deletecommentaire', function(req, res, next){
 
 
-	if (typeof req.body.id !== 'undefined'){
+	if (typeof req.body.id !== 'undefined' && req.body.key == settings.codeAdmin){
 		var id = req.body.id;
 
 	mysqlLib.getConnection(function(err,connection) {

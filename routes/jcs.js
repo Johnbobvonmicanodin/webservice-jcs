@@ -465,7 +465,7 @@ router.post('/updateapi', function(req, res, next){
 router.post('/ajoutjoueur', function(req, res, next){
 	var response = [];
 		
-	if(typeof req.body.pseudo !== 'undefined' && req.body.structure !== 'undefined'){
+	if(typeof req.body.pseudo !== 'undefined' && req.body.structure !== 'undefined' && req.body.key == settings.codeAdmin){
 		var pseudo = req.body.pseudo;
 		var structure = req.body.structure;
 		var saison = req.body.saison;

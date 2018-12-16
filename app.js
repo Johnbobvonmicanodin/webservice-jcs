@@ -1,6 +1,7 @@
 var settings      = require('./settings'),        // Fichier de config
     express       = require('express'),
     http          = require("http"),
+    //http          = require("https"),
     path          = require('path'),
     favicon       = require('serve-favicon'),
     logger        = require('morgan'),
@@ -15,6 +16,12 @@ var settings      = require('./settings'),        // Fichier de config
 
 var pjson = require('./package.json');
 var errDomain = require('domain');
+
+//Option pour https
+/*var options = {
+  key: fs.readFileSync('_.jcs-infinity.fr_private_key.key'),
+  cert: fs.readFileSync('jcs-infinity.fr_ssl_certificate.cer')
+}*/
 
 //IP whitelist
 //var ips = ['::1'];
@@ -169,7 +176,7 @@ if (cluster.isMaster) {
 // démarre le serveur en tant que module pour les workers
 else {
 	
-  http.createServer(app, function (req, resp) { }).listen(settings.webPort, function () {
+  http.createServer(/*options, */app, function (req, resp) { }).listen(settings.webPort, function () {
     loggerLib.info("========================================");
     loggerLib.info("WebService JCS - Sécurisé");
     loggerLib.info("Démarrage écoute sur le port : " + settings.webPort);

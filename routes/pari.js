@@ -206,6 +206,8 @@ router.post('/parisnonresolu', function(req, res, next){
 
 router.post('/ajoutpari', function(req, res, next){
 
+		if(req.body.key == settings.codeAdmin){
+
 			var question = req.body.question;
 			var cote1 = req.body.cote1;
 			var cote2 = req.body.cote2;
@@ -237,6 +239,10 @@ router.post('/ajoutpari', function(req, res, next){
 				});
 			
 			});	
+		}
+		else{
+			res.json({"succes":false});	
+		}
 });
 
 
@@ -252,13 +258,17 @@ router.post('/parier', function(req, res, next){
 	var date = date.addHours(2);
 	var date = date.toISOString().slice(0, 19).replace('T', ' ');
 
-	if(mise <= 100){
+	//if(mise <= 100){
 
 	mysqlLib.getConnection(function(err,connection) {
 		if (err) {
 			res.status(500).send({code:500, error: "Error in connection database : "+err });
 			return;
 		}
+
+		connection.query('SELECT * FROM jcs_parijoueur WHERE id_joueur = ? AND id_pari_origine = ?',[iduser,idpari], function(err, rep){
+
+			if(rep.length < 1){
 		
 		connection.query('INSERT INTO jcs_parijoueur (id_joueur,issue_choisi,cote_pari,mise_pari,date_pari,id_pari_origine)'
 		+' VALUES (?,?,?,?,?,?)',[iduser,issue,cote,mise,date,idpari],function(err, result) {
@@ -274,6 +284,13 @@ router.post('/parier', function(req, res, next){
 			}
 			});
 		});
+
+		}
+		else{
+			res.json({"sucess":false});
+		}
+
+		});
 	
 		connection.on('error', function(err) {      
 			res.status(500).send({code:500, error: "Error in connection database : "+err });
@@ -282,14 +299,17 @@ router.post('/parier', function(req, res, next){
 	
 	});	
 
-	}
+	/*}
 	else{
 		res.json({"succes":false});	
-	}
+	}*/
 });
 
 
 router.post('/resoudrepari', function(req, res, next){
+
+
+	if(req.body.key == settings.codeAdmin){
 
 	var id = req.body.id;
 	var solution = req.body.solution;
@@ -353,12 +373,20 @@ router.post('/resoudrepari', function(req, res, next){
 		});
 	
 	});	
+
+	}
+	else
+	{
+		res.json({"sucess":false});
+	}
 	
 });
 
 
 router.post('/supprimerpari', function(req, res, next){
 	
+	if(req.body.key == settings.codeAdmin){
+
 	var id = req.body.id;
 	
 	mysqlLib.getConnection(function(err,connection) {
@@ -396,6 +424,12 @@ router.post('/supprimerpari', function(req, res, next){
 			}
 		});
 	});
+
+	}
+	else
+	{
+		res.json({"sucess":false});
+	}
 	
 });
 
