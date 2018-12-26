@@ -13,28 +13,100 @@ const request = require("request");
 //récupérer les joueurs par saison
 router.post('/listejoueur', function(req, res){
 	
+
 		if (typeof req.body.saison !== 'undefined'){
 			var saison = req.body.saison;
+
+			var listejoueur = [];
+			var nbgames = [];
+			var resArray = [];
 
 			mysqlLib.getConnection(function(err,connection) {
 				if (err) {
                     res.status(500).send({code:500, error: "Error in connection database : "+err });
                     return;
 				}
-				
+
+				//var pre_query = new Date().getTime();
+
 				connection.query('SELECT DISTINCT j.jou_name as pseudo, j.jou_kills as kills, j.jou_deaths as deaths, j.jou_assists as assists, j.jou_gold as gold, j.jou_damage as damage, j.jou_vision as vision,'
-				+ 'j.jou_tempsdejeu as tempsdejeu,(SELECT count(nom_joueur) FROM jcs_statsjpm WHERE saison = ? and nom_joueur = j.jou_name group by nom_joueur) as nbgame '
-				+ 'FROM jcs_joueur j INNER JOIN jcs_statsjpm jp ON j.jou_name = jp.nom_joueur where j.jou_saison = ?', [saison,saison], function(err, result) {
-					connection.release();						
-					if (result.length > 0) {
-							
-						res.json(result);
-										
-					}      
+				+ 'j.jou_tempsdejeu as tempsdejeu FROM jcs_joueur j WHERE j.jou_saison = ?', [saison], function(err, data) {
+
+					if(data.length > 0){
+						listejoueur = data;
+						callback();
+					}
 					else {
 						res.status(200).send({code:200, error: "erreur"});
 					}
 				});
+
+				connection.query('SELECT nom_joueur, count(nom_joueur) as nbgame FROM jcs_statsjpm WHERE saison = ? group by nom_joueur', [saison], 
+				function(err, data){
+					if(data.length > 0){
+						nbgames = data;	
+						callback();	
+					}
+					else {
+						res.status(200).send({code:200, error: "erreur"});
+					}
+				});
+
+				function callback(){
+
+				if(listejoueur.length > 0 && nbgames.length > 0){
+
+					listejoueur.forEach(function(item){
+
+						var nbgame = 0;
+
+						nbgames.forEach(function(nb){
+							if(item.pseudo == nb.nom_joueur){
+								nbgame = nb.nbgame;
+							}			
+						});
+
+						var kda = item.kills + item.assists;
+						if(item.deaths > 0){
+							kda = kda/item.deaths;
+						}
+						kda = precisionRound(kda, 2);
+
+						var dpm = item.damage/(item.tempsdejeu/60);
+						dpm = precisionRound(dpm, 0);
+
+						var gpm = item.gold/(item.tempsdejeu/60);
+						gpm = precisionRound(gpm, 0);
+
+						var vpm = item.vision/(item.tempsdejeu/60);
+						vpm = precisionRound(vpm, 2);
+
+						var dg = item.damage/item.gold;
+						dg = precisionRound(dg, 2);
+
+						resArray.push({
+							pseudo: item.pseudo,
+							kda: kda,
+							dpm: dpm,
+							gpm: gpm,
+							vpm: vpm,
+							dg: dg,
+							nbgame: nbgame
+						});
+
+					});
+
+					res.json(resArray);
+
+					//var post_query = new Date().getTime();
+					//var duration = (post_query - pre_query) / 1000;
+
+					//console.log("Durée requête : "+duration);
+
+					connection.release();
+				}
+				
+				}
 			
 				connection.on('error', function(err) {      
                     res.status(500).send({code:500, error: "Error in connection database : "+err });
@@ -85,6 +157,12 @@ router.post('/listematchjoueur', function(req, res, next){
 		}
 	
 });
+
+
+function precisionRound(number, precision) {
+	var factor = Math.pow(10, precision);
+	return Math.round(number * factor) / factor;
+}	
 
 
 module.exports = router;
