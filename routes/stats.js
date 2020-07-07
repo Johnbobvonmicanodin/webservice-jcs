@@ -249,6 +249,10 @@ router.post('/listepresence', function(req, res, next){
 						championplay = data;
 						callback();
 					}
+					else{
+						connection.release();
+						res.json({"error":"error"});
+					}	
 				});
 			}
 
@@ -291,7 +295,8 @@ router.post('/listepresence', function(req, res, next){
 							champion: chp.champion,
 							nbpick: nbpick,
 							nbban: nbban,
-							nbvic: victoire
+							nbvic: victoire,
+							nbmatchl1: nbmatchL1
 						});
 					}
 
@@ -326,7 +331,8 @@ router.post('/listepresence', function(req, res, next){
 							champion: chp.champion,
 							nbpick: nbpick,
 							nbban: nbban,
-							nbvic: victoire
+							nbvic: victoire,
+							nbmatchacad: nbmatchAcad
 						});
 					}
 
