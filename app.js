@@ -41,6 +41,7 @@ var user = require('./routes/user');
 var pari = require('./routes/pari');
 var stats = require('./routes/stats');
 var article = require('./routes/article');
+var fantasy = require('./routes/fantasy');
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -124,6 +125,7 @@ app.use('/user', user);
 app.use('/pari', pari);
 app.use('/stats',stats);
 app.use('/article', article);
+app.use('/fantasy', fantasy);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
