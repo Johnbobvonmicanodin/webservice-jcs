@@ -58,6 +58,7 @@ router.post('/addcard', function(req, res, next){
 		var nom_carte = req.body.nom_carte;
 		var rarete_carte = req.body.rarete_carte;
 		var effet_carte = req.body.effet_carte;
+		var poste = req.body.poste;
 		var nature_carte = req.body.nature_carte;
 		var prix = req.body.prix;
 		
@@ -67,14 +68,15 @@ router.post('/addcard', function(req, res, next){
 				return;
 			}
 			
-			connection.query('INSERT INTO jcs_carte (nom_carte, rarete_carte, effet_carte, nature_carte, prix, ligue, saison) VALUES (?,?,?,?,?,?,?)', [nom_carte,rarete_carte,effet_carte,nature_carte,prix,ligue,saison], function(err, result) {
+			connection.query('INSERT INTO jcs_carte (nom_carte, rarete_carte, effet_carte, poste, nature_carte, prix, ligue, saison) VALUES (?,?,?,?,?,?,?,?)', [nom_carte,rarete_carte,effet_carte,poste,nature_carte,prix,ligue,saison], function(err, result) {
 				connection.release();						
 				if (!err) {
 			
 					res.json({'success':true});
 				}      
 				else {
-					res.status(200).send({code:200, error: "erreur dans l'ajoute des cartes"});
+					res.status(200).send({code:200, error: "erreur dans l'ajout des cartes"});
+					console.log(err);
 				}
 			});
 		
