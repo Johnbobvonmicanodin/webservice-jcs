@@ -50,6 +50,150 @@ router.post('/allcards', function(req, res, next){
 		}
 });	
 
+//Recupere toutes les cartes pour une ligue/saison
+router.post('/allcardsplayer', function(req, res, next){
+	
+	var response = [];
+	
+		if (typeof req.body.saison !== 'undefined' && typeof req.body.ligue !== 'undefined'){
+			var saison = req.body.saison, ligue = req.body.ligue;
+										
+			mysqlLib.getConnection(function(err,connection) {
+				if (err) {
+                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    return;
+				}
+				
+				connection.query('SELECT * from jcs_carte where ligue = ? and saison = ? and nature_carte = 1',[ligue, saison], function(err, result) {
+					connection.release();
+					if (!err) {				
+						res.json(result);						
+					}      
+					else {
+						res.status(200).send({code:200, error: "erreur dans l'accès aux cartes"});
+					}
+				});
+			
+				connection.on('error', function(err) {      
+                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    return;
+				});
+			
+			});
+		} else {
+            res.status(412).send({code:412, error: "connexion - Tout les paramètres ne sont pas fournis" });
+            return;
+		}
+});	
+
+//Recupere toutes les cartes pour une ligue/saison
+router.post('/allcardsitems', function(req, res, next){
+	
+	var response = [];
+	
+		if (typeof req.body.saison !== 'undefined' && typeof req.body.ligue !== 'undefined'){
+			var saison = req.body.saison, ligue = req.body.ligue;
+									
+			mysqlLib.getConnection(function(err,connection) {
+				if (err) {
+                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    return;
+				}
+				
+				connection.query('SELECT * from jcs_carte where ligue = ? and saison = ? and nature_carte = 3',[ligue, saison], function(err, result) {
+					connection.release();
+					if (!err) {				
+						res.json(result);						
+					}      
+					else {
+						res.status(200).send({code:200, error: "erreur dans l'accès aux cartes"});
+					}
+				});
+			
+				connection.on('error', function(err) {      
+                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    return;
+				});
+			
+			});
+		} else {
+            res.status(412).send({code:412, error: "connexion - Tout les paramètres ne sont pas fournis" });
+            return;
+		}
+});	
+
+//Recupere toutes les cartes pour une ligue/saison
+router.post('/allcardsteams', function(req, res, next){
+	
+	var response = [];
+	
+		if (typeof req.body.saison !== 'undefined' && typeof req.body.ligue !== 'undefined'){
+			var saison = req.body.saison, ligue = req.body.ligue;
+									
+			mysqlLib.getConnection(function(err,connection) {
+				if (err) {
+                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    return;
+				}
+				
+				connection.query('SELECT * from jcs_carte where ligue = ? and saison = ? and nature_carte = 2',[ligue, saison], function(err, result) {
+					connection.release();
+					if (!err) {				
+						res.json(result);						
+					}      
+					else {
+						res.status(200).send({code:200, error: "erreur dans l'accès aux cartes"});
+					}
+				});
+			
+				connection.on('error', function(err) {      
+                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    return;
+				});
+			
+			});
+		} else {
+            res.status(412).send({code:412, error: "connexion - Tout les paramètres ne sont pas fournis" });
+            return;
+		}
+});	
+
+//Recupere toutes les cartes pour une ligue/saison
+router.post('/allcardsevent', function(req, res, next){
+	
+	var response = [];
+	
+		if (typeof req.body.saison !== 'undefined' && typeof req.body.ligue !== 'undefined'){
+			var saison = req.body.saison, ligue = req.body.ligue;
+									
+			mysqlLib.getConnection(function(err,connection) {
+				if (err) {
+                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    return;
+				}
+				
+				connection.query('SELECT * from jcs_carte where ligue = ? and saison = ? and nature_carte = 4',[ligue, saison], function(err, result) {
+					connection.release();
+					if (!err) {				
+						res.json(result);						
+					}      
+					else {
+						res.status(200).send({code:200, error: "erreur dans l'accès aux cartes"});
+					}
+				});
+			
+				connection.on('error', function(err) {      
+                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    return;
+				});
+			
+			});
+		} else {
+            res.status(412).send({code:412, error: "connexion - Tout les paramètres ne sont pas fournis" });
+            return;
+		}
+});	
+
 //Ajoute une carte 
 router.post('/addcard', function(req, res, next){
 	
