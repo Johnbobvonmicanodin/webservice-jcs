@@ -50,13 +50,20 @@ router.post('/allcards', function(req, res, next){
 		}
 });	
 
-//Recupere toutes les cartes pour une ligue/saison
-router.post('/allcardsplayer', function(req, res, next){
+//Recupere toutes les cartes pour une ligue/saison pour un type
+router.post('/allcardstype', function(req, res, next){
 	
 	var response = [];
 	
 		if (typeof req.body.saison !== 'undefined' && typeof req.body.ligue !== 'undefined'){
 			var saison = req.body.saison, ligue = req.body.ligue;
+			var type = req.body.type;
+
+			if(type == 3 || type == 4)
+			{
+				var ligue = "all";
+			}
+			
 										
 			mysqlLib.getConnection(function(err,connection) {
 				if (err) {
@@ -64,7 +71,7 @@ router.post('/allcardsplayer', function(req, res, next){
                     return;
 				}
 				
-				connection.query('SELECT * from jcs_carte where ligue = ? and saison = ? and nature_carte = 1',[ligue, saison], function(err, result) {
+				connection.query('SELECT * from jcs_carte where ligue = ? and saison = ? and nature_carte = ?',[ligue, saison, type], function(err, result) {
 					connection.release();
 					if (!err) {				
 						res.json(result);						
@@ -86,21 +93,27 @@ router.post('/allcardsplayer', function(req, res, next){
 		}
 });	
 
-//Recupere toutes les cartes pour une ligue/saison
-router.post('/allcardsitems', function(req, res, next){
+//Recupere toutes les cartes pour une ligue/saison pour un type seulement normales (cartes de base)
+router.post('/allcardsbase', function(req, res, next){
 	
 	var response = [];
 	
 		if (typeof req.body.saison !== 'undefined' && typeof req.body.ligue !== 'undefined'){
 			var saison = req.body.saison, ligue = req.body.ligue;
-									
+			var type = req.body.type;
+
+			if(type == 3 || type == 4)
+			{
+				var ligue = "all";
+			}
+			
 			mysqlLib.getConnection(function(err,connection) {
 				if (err) {
                     res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
                     return;
 				}
 				
-				connection.query('SELECT * from jcs_carte where ligue = ? and saison = ? and nature_carte = 3',[ligue, saison], function(err, result) {
+				connection.query('SELECT * from jcs_carte where ligue = ? and saison = ? and nature_carte = ? and rarete_carte = 1',[ligue, saison, type], function(err, result) {
 					connection.release();
 					if (!err) {				
 						res.json(result);						
@@ -122,77 +135,6 @@ router.post('/allcardsitems', function(req, res, next){
 		}
 });	
 
-//Recupere toutes les cartes pour une ligue/saison
-router.post('/allcardsteams', function(req, res, next){
-	
-	var response = [];
-	
-		if (typeof req.body.saison !== 'undefined' && typeof req.body.ligue !== 'undefined'){
-			var saison = req.body.saison, ligue = req.body.ligue;
-									
-			mysqlLib.getConnection(function(err,connection) {
-				if (err) {
-                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
-                    return;
-				}
-				
-				connection.query('SELECT * from jcs_carte where ligue = ? and saison = ? and nature_carte = 2',[ligue, saison], function(err, result) {
-					connection.release();
-					if (!err) {				
-						res.json(result);						
-					}      
-					else {
-						res.status(200).send({code:200, error: "erreur dans l'accès aux cartes"});
-					}
-				});
-			
-				connection.on('error', function(err) {      
-                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
-                    return;
-				});
-			
-			});
-		} else {
-            res.status(412).send({code:412, error: "connexion - Tout les paramètres ne sont pas fournis" });
-            return;
-		}
-});	
-
-//Recupere toutes les cartes pour une ligue/saison
-router.post('/allcardsevent', function(req, res, next){
-	
-	var response = [];
-	
-		if (typeof req.body.saison !== 'undefined' && typeof req.body.ligue !== 'undefined'){
-			var saison = req.body.saison, ligue = req.body.ligue;
-									
-			mysqlLib.getConnection(function(err,connection) {
-				if (err) {
-                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
-                    return;
-				}
-				
-				connection.query('SELECT * from jcs_carte where ligue = ? and saison = ? and nature_carte = 4',[ligue, saison], function(err, result) {
-					connection.release();
-					if (!err) {				
-						res.json(result);						
-					}      
-					else {
-						res.status(200).send({code:200, error: "erreur dans l'accès aux cartes"});
-					}
-				});
-			
-				connection.on('error', function(err) {      
-                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
-                    return;
-				});
-			
-			});
-		} else {
-            res.status(412).send({code:412, error: "connexion - Tout les paramètres ne sont pas fournis" });
-            return;
-		}
-});	
 
 //Ajoute une carte 
 router.post('/addcard', function(req, res, next){
@@ -640,7 +582,7 @@ router.post('/addcardplayer', function(req, res, next){
 	}
 });
 
-//Deck pour un joueur pour saison/ligue
+//Deck pour un joueur pour saison/ligue pour un type
 router.post('/deckjoueur', function(req, res, next){
 	
 	var response = [];
@@ -650,13 +592,19 @@ router.post('/deckjoueur', function(req, res, next){
 		var id_compte = req.body.id_compte;
 		var ligue = req.body.ligue;
 		var saison = req.body.saison;
+		var type = req.body.type;
 
+		if(type == 3 || type == 4)
+		{
+			var ligue = "all";
+		}
+		
 		mysqlLib.getConnection(function(err,connection) {
 			if (err) {
 				res.json({"code" : 100, "status" : "Error in connection database : "+err});
 				return;
 			}
-			connection.query('SELECT * FROM jcs_cartes_player where id_compte = ? and ligue = ? and saison = ?',[id_compte, ligue, saison], function(err, result) {
+			connection.query('SELECT * FROM jcs_cartes_player p INNER JOIN jcs_carte c ON p.id_carte = c.id_carte where p.id_compte = ? and p.ligue = ? and p.saison = ? and c.nature_carte = ?',[id_compte, ligue, saison, type], function(err, result) {
 				connection.release();
 				if (!err) {				
 					res.json(result);						
