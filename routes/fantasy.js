@@ -135,6 +135,117 @@ router.post('/allcardsbase', function(req, res, next){
 		}
 });	
 
+//Recupere toutes les cartes pour une ligue/saison non normal + type
+router.post('/allcardsrare', function(req, res, next){
+	
+	var response = [];
+	
+		if (typeof req.body.saison !== 'undefined' && typeof req.body.ligue !== 'undefined'){
+			var saison = req.body.saison, ligue = req.body.ligue;
+			var type = req.body.type;
+									
+			mysqlLib.getConnection(function(err,connection) {
+				if (err) {
+                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    return;
+				}
+				
+				connection.query('SELECT * from jcs_carte where ligue = ? and saison = ? and nature_carte = ? rarete_carte > 1',[ligue, saison, type], function(err, result) {
+					connection.release();
+					if (!err) {				
+						res.json(result);						
+					}      
+					else {
+						res.status(200).send({code:200, error: "erreur dans l'accès aux cartes"});
+					}
+				});
+			
+				connection.on('error', function(err) {      
+                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    return;
+				});
+			
+			});
+		} else {
+            res.status(412).send({code:412, error: "connexion - Tout les paramètres ne sont pas fournis" });
+            return;
+		}
+});	
+
+//tirage joueur team 
+router.post('/tiragejoueur', function(req, res, next){
+	
+	var response = [];
+	
+		if (typeof req.body.saison !== 'undefined' && typeof req.body.ligue !== 'undefined'){
+			var saison = req.body.saison, ligue = req.body.ligue;
+			var rarete = req.body.rarete;
+									
+			mysqlLib.getConnection(function(err,connection) {
+				if (err) {
+                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    return;
+				}
+				
+				connection.query('SELECT * from jcs_carte where ligue = ? and saison = ? and rarete_carte = ? and (nature_carte = 1 OR nature_carte = 2)',[ligue, saison, rarete], function(err, result) {
+					connection.release();
+					if (!err) {				
+						res.json(result);						
+					}      
+					else {
+						res.status(200).send({code:200, error: "erreur dans l'accès aux cartes"});
+					}
+				});
+			
+				connection.on('error', function(err) {      
+                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    return;
+				});
+			
+			});
+		} else {
+            res.status(412).send({code:412, error: "connexion - Tout les paramètres ne sont pas fournis" });
+            return;
+		}
+});	
+
+//tirage item/event
+router.post('/tirageitem', function(req, res, next){
+	
+	var response = [];
+	
+		if (typeof req.body.saison !== 'undefined' && typeof req.body.ligue !== 'undefined'){
+			var saison = req.body.saison, ligue = req.body.ligue;
+					
+			mysqlLib.getConnection(function(err,connection) {
+				if (err) {
+                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    return;
+				}
+				
+				connection.query('SELECT * from jcs_carte where ligue = ? and saison = ? and (nature_carte = 3 OR nature_carte = 4)',[ligue, saison], function(err, result) {
+					connection.release();
+					if (!err) {				
+						res.json(result);				
+					}      
+					else {
+						res.status(200).send({code:200, error: "erreur dans l'accès aux cartes"});
+					}
+				});
+			
+				connection.on('error', function(err) {      
+                    res.status(500).send({code:500, error: "connexion - Error in connection database : "+err });
+                    return;
+				});
+			
+			});
+		} else {
+            res.status(412).send({code:412, error: "connexion - Tout les paramètres ne sont pas fournis" });
+            return;
+		}
+});	
+
+
 
 //Ajoute une carte 
 router.post('/addcard', function(req, res, next){
@@ -622,6 +733,41 @@ router.post('/deckjoueur', function(req, res, next){
 	}
 });
 
+
+//Recuperer la liste des cartes qu'un joueur n'a pas
+router.post('/listenonpossession', function(req, res, next){
+	var response = [];
+			
+	if (typeof req.body.id_compte !== 'undefined'){
+	
+		var id_compte = req.body.id_compte;
+		var ligue = req.body.ligue;
+		var saison = req.body.saison;
+		
+		
+		mysqlLib.getConnection(function(err,connection) {
+			if (err) {
+				res.json({"code" : 100, "status" : "Error in connection database : "+err});
+				return;
+			}
+			connection.query('SELECT * FROM jcs_carte WHERE saison = ?, ligue = ? AND rarete_carte > 1'
+			+' MINUS SELECT * FROM jcs_cartes_player p INNER JOIN jcs_carte c ON p.id_carte = c.id_carte where p.id_compte = ? and p.ligue = ? and p.saison = ?',[id_compte, ligue, saison, type], function(err, result) {
+				connection.release();
+				if (!err) {				
+					res.json(result);						
+				}      
+				else {
+					res.status(200).send({code:200, error: "erreur dans l'accès au deck"});
+				}
+			});
+		});
+	
+	}else {
+		response.push({'result' : 'error', 'msg' : 'Please fill required details'});
+		res.setHeader('Content-Type', 'application/json');
+		res.status(200).send(JSON.stringify(response));
+	}
+});
 
  
 module.exports = router;
