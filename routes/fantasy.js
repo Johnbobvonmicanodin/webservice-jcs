@@ -733,6 +733,41 @@ router.post('/deckjoueur', function(req, res, next){
 	}
 });
 
+//Check si une carte existe
+router.post('/deckcarteunique', function(req, res, next){
+	
+	var response = [];
+			
+	if (typeof req.body.id_compte !== 'undefined'){
+	
+		var id_compte = req.body.id_compte;
+		var ligue = req.body.ligue;
+		var saison = req.body.saison;
+		var id_carte = req.body.id_carte;
+	
+		mysqlLib.getConnection(function(err,connection) {
+			if (err) {
+				res.json({"code" : 100, "status" : "Error in connection database : "+err});
+				return;
+			}
+			connection.query('SELECT * FROM jcs_cartes_player WHERE id_compte = ? AND id_carte = ? AND ligue = ? AND saison = ?',[id_compte, id_carte, ligue, saison], function(err, result) {
+				connection.release();
+				if (result.length > 0) {			
+					res.json({'trouve':true});				
+				}      
+				else {
+					res.json({'trouve':false});
+				}
+			});
+		});
+	
+	}else {
+		response.push({'result' : 'error', 'msg' : 'Please fill required details'});
+		res.setHeader('Content-Type', 'application/json');
+		res.status(200).send(JSON.stringify(response));
+	}
+});
+
 
 //Recuperer la liste des cartes qu'un joueur n'a pas
 router.post('/listenonpossession', function(req, res, next){
@@ -769,5 +804,56 @@ router.post('/listenonpossession', function(req, res, next){
 	}
 });
 
+
+//Update argent
+router.post('/minusmoney', function(req, res, next){
+	
+	var response = [];
+	
+		var id = req.body.id;
+		var argent = req.body.argent;
+	
+		mysqlLib.getConnection(function(err,connection) {
+			if (err) {
+				res.json({"code" : 100, "status" : "Error in connection database : "+err});
+				return;
+			}
+			
+				connection.query('UPDATE jcs_statsparij SET argent_actuel = argent_actuel - ? WHERE id_joueur = ?', [argent, id], function(err, result){
+						if(!err){
+							response.push({'update' : 'success'});
+						}			
+				});			
+			
+			 res.setHeader('Content-Type', 'application/json');
+             res.status(200).send(JSON.stringify(response));
+		
+		});
+});
+
+router.post('/plusmoney', function(req, res, next){
+	
+	var response = [];
+	
+		var id = req.body.id;
+		var argent = req.body.argent;
+	
+		mysqlLib.getConnection(function(err,connection) {
+			if (err) {
+				res.json({"code" : 100, "status" : "Error in connection database : "+err});
+				return;
+			}
+			
+				connection.query('UPDATE jcs_statsparij SET argent_actuel = argent_actuel + ? WHERE id_joueur = ?', [argent, id], function(err, result){
+						if(!err){
+							response.push({'update' : 'success'});
+						}			
+				});			
+			
+			 res.setHeader('Content-Type', 'application/json');
+             res.status(200).send(JSON.stringify(response));
+		
+		});
+});
  
 module.exports = router;
