@@ -417,7 +417,7 @@ router.post('/addroster', function(req, res, next){
 					res.json({'success':true});
 				}      
 				else {
-					res.status(200).send({code:200, error: "erreur dans l'ajoute du roster"});
+					res.status(200).send({code:200, error: "erreur dans l'ajoute du roster : " + err});
 				}
 			});
 		
@@ -448,7 +448,7 @@ router.post('/rosterjoueur', function(req, res, next){
 				res.json({"code" : 100, "status" : "Error in connection database : "+err});
 				return;
 			}
-			connection.query('SELECT * FROM jcs_roster where id_session = ? and id_compte = ? and ligue = ? and saison = ?',[id_session, id_compte, ligue, saison], function(err, result) {
+			connection.query('SELECT * FROM jcs_roster r INNER JOIN jcs_carte c ON r.id_carte = c.id_carte where r.id_session = ? and r.id_compte = ? and r.ligue = ? and r.saison = ?',[id_session, id_compte, ligue, saison], function(err, result) {
 				connection.release();
 				if (!err) {				
 					res.json(result);						
@@ -537,6 +537,72 @@ router.post('/deletecardroster', function(req, res, next){
 });
 
 
+//Supprimer toutes les cartes du roster
+router.post('/deleteallcardroster', function(req, res, next){
+
+
+	if (typeof req.body.id_compte !== 'undefined'){
+	
+		var id_compte = req.body.id_compte;
+		var id_session = req.body.id_session;
+
+	mysqlLib.getConnection(function(err,connection) {
+		if (err) {
+			res.status(500).send({code:500, error: "Error in connection database : "+err });
+			return;
+		}
+		
+		connection.query('DELETE FROM jcs_roster WHERE id_compte = ? AND id_session = ?',[id_compte, id_session],function(err, result) {
+			connection.release();
+			if (!err) {				
+				res.json({'success':true});						
+			}      
+			else {
+				res.status(200).send({code:200, error: "erreur, la suppression de la carte du roster a échoué"});
+			}
+		});
+	
+		connection.on('error', function(err) {      
+			res.status(500).send({code:500, error: "Error in connection database : "+err });
+			return;
+		});
+	
+	});
+	} else {
+		res.status(412).send({code:412, error: "Tout les paramètres ne sont pas fournis" });
+		return;
+	}
+});
+
+//Update roster
+router.post('/updateroster', function(req, res, next){
+
+	var response = [];
+	
+	var id_roster = req.body.id_roster;
+	var item_1_id = req.body.item_1;
+	var item_2_id = req.body.item_2;
+	var item_3_id = req.body.item_3;
+
+	mysqlLib.getConnection(function(err,connection) {
+		if (err) {
+			res.json({"code" : 100, "status" : "Error in connection database : "+err});
+			return;
+		}
+	
+			connection.query('update jcs_roster set item_1_id = ?, item_2_id = ?, item_3_id = ? where id_roster = ?', [item_1_id, item_2_id, item_3_id, id_roster], function(err, result){
+					if(!err){
+						response.push({'success' : true});
+					}			
+			});			
+		
+		 res.setHeader('Content-Type', 'application/json');
+		 res.status(200).send(JSON.stringify(response));
+	
+	});
+});
+
+
 /*
 	SESSION
 */
@@ -547,7 +613,11 @@ router.post('/addsession', function(req, res, next){
 	if (typeof req.body.saison !== 'undefined' && typeof req.body.ligue !== 'undefined'){
 		var saison = req.body.saison, ligue = req.body.ligue;
 		var semaine = req.body.semaine;
-		var date_session = req.body.date_session;
+
+		var date = new Date();
+		var date = date.addHours(2);
+		var date = date.toISOString().slice(0, 19).replace('T', ' ');
+
 		var date_fin = req.body.date_fin;
 	
 		mysqlLib.getConnection(function(err,connection) {
@@ -556,14 +626,58 @@ router.post('/addsession', function(req, res, next){
 				return;
 			}
 			
-			connection.query('INSERT INTO jcs_session (semaine, date_session, date_fin, ligue, saison) VALUES (?,?,?,?,?)', [semaine,date_session,date_fin,ligue,saison], function(err, result) {
+			connection.query('INSERT INTO jcs_session (semaine, date_session, date_fin, ligue, saison) VALUES (?,?,?,?,?)', [semaine,date,date_fin,ligue,saison], function(err, result) {
 				connection.release();						
 				if (!err) {
 			
 					res.json({'success':true});
 				}      
 				else {
-					res.status(200).send({code:200, error: "erreur dans l'ajout d'une session"});
+					res.status(200).send({code:200, error: "erreur dans l'ajout d'une session : "+err});
+				}
+			});
+		
+			connection.on('error', function(err) {      
+				res.status(500).send({code:500, error: "Error in connection database : "+err });
+				return;
+			});
+		
+		});
+	} else {
+		res.status(412).send({code:412, error: "Tout les paramètres ne sont pas fournis" });
+		return;
+	}
+});
+
+
+//Recuperer une session
+router.post('/getsession', function(req, res, next){
+	
+	if (typeof req.body.saison !== 'undefined' && typeof req.body.ligue !== 'undefined'){
+
+		mysqlLib.getConnection(function(err,connection) {
+			if (err) {
+				res.status(500).send({code:500, error: "Error in connection database : "+err });
+				return;
+			}
+
+			var saison = req.body.saison;
+			var ligue = req.body.ligue;
+
+			var date = new Date();
+			//ajout UTC+2 heure ETE
+			var date = date.addHours(2);
+			var date = date.toISOString().slice(0, 19).replace('T', ' ');
+
+		
+			connection.query('SELECT * FROM jcs_session WHERE ligue = ? AND saison = ? AND date_fin >= NOW() ORDER BY id_session DESC LIMIT 1', [ligue,saison], function(err, result) {
+				connection.release();
+					
+				if (result[0].saison != null) {			
+					res.json(result[0]);			
+				}      
+				else {
+					res.status(200).send({code:200, error: "pas de session en cours"});
 				}
 			});
 		
@@ -635,11 +749,69 @@ router.post('/updatescore', function(req, res, next){
 				res.json({"code" : 100, "status" : "Error in connection database : "+err});
 				return;
 			}
-				passe = SHA256(passe).toString();
-				
+		
 				connection.query('update jcs_score set score_valeur = ? where id_score = ?', [score_valeur, id], function(err, result){
 						if(!err){
-							response.push({'passe' : 'success'});
+							response.push({'success' : true});
+						}			
+				});			
+			
+			 res.setHeader('Content-Type', 'application/json');
+             res.status(200).send(JSON.stringify(response));
+		
+		});
+});
+
+router.post('/getscore', function(req, res, next){
+	
+	var response = [];
+	
+		var id_compte = req.body.id_compte;
+		var id_session = req.body.id_session;
+	
+		mysqlLib.getConnection(function(err,connection) {
+			if (err) {
+				res.json({"code" : 100, "status" : "Error in connection database : "+err});
+				return;
+			}
+	
+				connection.query('select * from jcs_score where id_compte = ? and id_session = ?', [id_compte, id_session], function(err, result){
+						if(!err){
+
+							if(result[0] === undefined)	
+							{
+								res.json({'success':false});
+							}
+							else
+							{
+								res.json({'success':true});
+							}				
+						}	
+						else
+						{
+							console.log(err);
+							res.setHeader('Content-Type', 'application/json');
+							res.status(200).send(JSON.stringify(response));
+						}		
+				});			
+		});
+});
+
+router.post('/getallscore', function(req, res, next){
+	
+	var response = [];
+	
+		var id_compte = req.body.id_compte;
+		
+		mysqlLib.getConnection(function(err,connection) {
+			if (err) {
+				res.json({"code" : 100, "status" : "Error in connection database : "+err});
+				return;
+			}
+			
+				connection.query('select * from jcs_score where id_compte = ?', [id_compte], function(err, result){
+						if(!err){
+							response.push(result);
 						}			
 				});			
 			
