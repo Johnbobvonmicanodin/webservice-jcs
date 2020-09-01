@@ -258,6 +258,7 @@ router.post('/addcard', function(req, res, next){
 		var poste = req.body.poste;
 		var nature_carte = req.body.nature_carte;
 		var prix = req.body.prix;
+		var team = req.body.team;
 		
 		mysqlLib.getConnection(function(err,connection) {
 			if (err) {
@@ -1027,5 +1028,6 @@ router.post('/plusmoney', function(req, res, next){
 		
 		});
 });
- 
+
+
 module.exports = router;

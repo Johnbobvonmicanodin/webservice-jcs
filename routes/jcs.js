@@ -545,6 +545,34 @@ router.post('/updateapi', function (req, res, next) {
 });
 
 
+router.post('/getparam', function (req, res, next) {
+    var response = [];
+
+    if (typeof req.body.param !== 'undefined') {
+        var param = req.body.param;
+
+        mysqlLib.getConnection(function (err, connection) {
+            if (err) {
+                res.json({"code": 100, "status": "Error in connection database : " + err});
+                return;
+            }
+
+            connection.query("select * from jcs_parametre where param_libelle = ?", [param], function (err, data) {
+                connection.release();
+                if (!err) {
+                    res.json(data);
+                }
+            });
+
+        });
+    } else {
+        response.push({'result': 'error', 'msg': 'Please fill required details'});
+        res.setHeader('Content-Type', 'application/json');
+        res.status(200).send(JSON.stringify(response));
+    }
+});
+
+
 router.post('/ajoutjoueur', function (req, res, next) {
     let response = [];
 
