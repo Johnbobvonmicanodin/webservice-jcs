@@ -1030,4 +1030,74 @@ router.post('/plusmoney', function(req, res, next){
 });
 
 
+router.post('/calculscoresession', function(req, res, next)
+{
+	var id_session = req.body.session; 
+	var ligue = req.body.ligue;
+	var saison = req.body.saison; 	
+	var semaine = req.body.semaine;
+
+	mysqlLib.getConnection(function(err,connection) {
+		if (err) {
+			res.json({"code" : 100, "status" : "Error in connection database : "+err});
+			return;
+		}
+
+		connection.query('SELECT * FROM jcs_match WHERE ma_ligue = ? AND ma_saison = ? AND ma_semaine = ?', [ligue, saison, semaine], function(err, matchs){
+			
+			matchs.forEach(function (match) {
+				connection.query('SELECT * FROM jcs_statsjpm WHERE id_match = ?', [match.mat_id], function(err, jpms)
+				{
+					jpms.forEach(function (stat) {
+						connection.query('SELECT * FROM jcs_roster r INNER JOIN jcs_carte c ON r.id_carte = j.id_carte WHERE r.session = ? and r.ligue = ? and r.saison = ? and j.nature_carte = 1', [id_session, ligue, saison], function(err, rosters){
+							if(rosters.length > 0)
+							{
+								rosters.forEach(function (roster) {
+									var score = (stat.kills*5 + stat.assists*2) - (stat.deaths*3);
+
+									if(roster.item_1_id != 0){
+										gestionItem(roster.item_1_id, score);
+									}
+
+									if(roster.item_2_id != 0){
+										gestionItem(roster.item_2_id, score);
+									}
+
+									if(roster.item_3_id != 0){
+										gestionItem(roster.item_3_id, score);
+									}
+
+									//updateroster pour le score
+								});
+							}
+						});
+					});
+				});
+			});
+
+			//pour chaque match selectionner toutes les statsjpm, 
+				//pour chaque stats jpm, selectionner les rosters ayant l'id joueur et l'id session
+					//pour chaque roster calcule + item
+
+			//pour chaque match recherchez les rosters ayant les id des teams gagnant et perdante 
+				//maj le roster avec le score 
+				//interrogez l'id match pour avoir les données supplémentaires
+
+			//event 
+		});
+
+		
+	});
+});
+
+function caculeScoreFin()
+{
+	//mets à jour le score général pour chaque roster et calcul le score généré pas les joueurs 
+}
+
+function gestionItem(data, score)
+{	
+	//gros switch pour mettre en marche les items
+}
+
 module.exports = router;
