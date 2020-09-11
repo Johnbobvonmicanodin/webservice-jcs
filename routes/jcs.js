@@ -18,7 +18,7 @@ router.post('/gamedata', function (req, res) {
     if (typeof req.body.id !== 'undefined') {
         function getGameInfo(getFromId, callback) {
             if (!getFromId) {
-                request("http://www.piorrro33.fr/api/gameinfo", function onRequest(error, response, body) {
+                request("http://webservice-harmful.jcs-infinity.fr/api/gameinfo", function onRequest(error, response, body) {
                     if (error || response.statusCode !== 200) {
                         return callback(error || {statuscode: response.statusCode});
                     }
@@ -389,7 +389,7 @@ function deleteGameInfo(gameId) {
     let requestBody = {
         "gameId": gameId
     };
-    request({method: 'POST', uri: "http://www.piorrro33.fr/api/deletegameinfo", json: requestBody}, (error) => {
+    request({method: 'POST', uri: "http://webservice-harmful.jcs-infinity.fr/api/deletegameinfo", json: requestBody}, (error) => {
         if (error) {
             console.log(error);
         }
@@ -423,7 +423,7 @@ router.get('/amountofgames', function (req, res) {
 });
 
 function getAmountOfGames(callback) {
-    request("http://www.piorrro33.fr/api/gameinfo", function onRequest(error, response, body) {
+    request("http://webservice-harmful.jcs-infinity.fr/api/gameinfo", function onRequest(error, response, body) {
         if (error || response.statusCode !== 200) {
             return callback(error || {statuscode: response.statusCode});
         }
