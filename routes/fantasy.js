@@ -697,6 +697,44 @@ router.post('/getsession', function(req, res, next){
 });
 
 
+//Recuperer toutes les sessions pour une ligue et une saison
+router.post('/getallsession', function(req, res, next){
+	
+	if (typeof req.body.saison !== 'undefined' && typeof req.body.ligue !== 'undefined'){
+
+		mysqlLib.getConnection(function(err,connection) {
+			if (err) {
+				res.status(500).send({code:500, error: "Error in connection database : "+err });
+				return;
+			}
+
+			var saison = req.body.saison;
+			var ligue = req.body.ligue;
+
+			connection.query('SELECT * FROM jcs_session WHERE ligue = ? AND saison = ? ORDER BY id_session DESC', [ligue,saison], function(err, result) {
+				connection.release();
+					
+				if (result.length > 0) {			
+					res.json(result);			
+				}      
+				else {
+					res.status(200).send({code:200, error: "pas de session"});
+				}
+			});
+		
+			connection.on('error', function(err) {      
+				res.status(500).send({code:500, error: "Error in connection database : "+err });
+				return;
+			});
+		
+		});
+	} else {
+		res.status(412).send({code:412, error: "Tout les paramètres ne sont pas fournis" });
+		return;
+	}
+});
+
+
 /*
 	SCORES
 */
@@ -813,6 +851,61 @@ router.post('/getallscore', function(req, res, next){
 			}
 			
 				connection.query('select * from jcs_score where id_compte = ?', [id_compte], function(err, result){
+						if(!err){
+							response.push(result);
+						}			
+				});			
+			
+			 res.setHeader('Content-Type', 'application/json');
+             res.status(200).send(JSON.stringify(response));
+		
+		});
+});
+
+//tous les scores cummulés pour une ligue pour une saison
+router.post('/getallscore', function(req, res, next){
+	
+	var response = [];
+	
+		var ligue = req.body.ligue;
+		var saison = req.body.saison;
+		
+		mysqlLib.getConnection(function(err,connection) {
+			if (err) {
+				res.json({"code" : 100, "status" : "Error in connection database : "+err});
+				return;
+			}
+			
+				connection.query("SELECT SUM(s.score_valeur), u.uti_login FROM jcs_score s INNER JOIN jcs_utilisateur u ON s.id_compte = u.uti_id INNER JOIN jcs_session p ON s.id_session = p.id_session" 
+								+" WHERE p.ligue = ? AND p.saison = ? GROUP BY s.id_compte", [ligue, saison], function(err, result){
+						if(!err){
+							response.push(result);
+						}			
+				});			
+			
+			 res.setHeader('Content-Type', 'application/json');
+             res.status(200).send(JSON.stringify(response));
+		
+		});
+});
+
+//tous les scores pour une session pour une ligue et pour une saison
+router.post('/getallscore', function(req, res, next){
+	
+	var response = [];
+	
+		var session = req.body.session;
+		var ligue = req.body.ligue;
+		var saison = req.body.saison;
+		
+		mysqlLib.getConnection(function(err,connection) {
+			if (err) {
+				res.json({"code" : 100, "status" : "Error in connection database : "+err});
+				return;
+			}
+			
+				connection.query("SELECT s.score_valeur, u.uti_login FROM jcs_score s INNER JOIN jcs_utilisateur u ON s.id_compte = u.uti_id INNER JOIN jcs_session p ON s.id_session = p.id_session" 
+								+" WHERE p.ligue = ? AND p.saison = ? AND p.id_session = ?", [ligue, saison, session], function(err, result){
 						if(!err){
 							response.push(result);
 						}			
@@ -1079,27 +1172,70 @@ router.post('/calculscoresession', function(req, res, next)
 							{
 								rosters.forEach(function (roster) {
 									var score = (stat.kills*5 + stat.assists*2) - (stat.deaths*3);
+					
+									if(roster.item_1_id != 0 || roster.item_2_id != 0 || roster.item_3_id != 0)
+									{							
+										async function asyncItem()
+										{											
+											if(roster.item_1_id != 0){									
+												score = await gestionItem(match, jpms, roster, stat, roster.item_1_id, score);				
+											}
+										
+											if(roster.item_2_id != 0){
+												score = await gestionItem(match, jpms, roster, stat, roster.item_2_id, score);								
+											}
+														
+											if(roster.item_3_id != 0){								
+												score = await gestionItem(match, jpms, roster, stat, roster.item_3_id, score);										
+											}						
+										}		
 
-									console.log(stat.nom_joueur);
-									console.log(roster);
-									console.log(score);
+										const gestionDesItems = new Promise((resolve, reject) => {																	
+											asyncItem().then(asy => {
+												resolve("fini");
+											});									
+										});
 
-									if(roster.item_1_id != 0){
-										score = score + gestionItem(match, jpms, roster, stat, roster.item_1_id, score);
+										gestionDesItems.then((value) => {
+											console.log("score item finaux : "+ score);
+											connection.query('UPDATE jcs_roster SET score = score + ? WHERE id_roster = ?', [score, roster.id_roster], function(err, result){
+												//hue hue 										
+											});	
+										});
+
+										/*if(roster.item_1_id != 0){
+											console.log("score 1 "+score);
+											score = gestionItem(match, jpms, roster, stat, roster.item_1_id, score);
+											console.log("score 1 post "+score);
+										}
+
+										if(roster.item_2_id != 0){
+											console.log("score 2 "+score);
+											score = gestionItem(match, jpms, roster, stat, roster.item_2_id, score);
+											console.log("score 2 post "+score);
+										}
+
+										if(roster.item_3_id != 0){
+											console.log("score 3 "+score);
+											score = gestionItem(match, jpms, roster, stat, roster.item_3_id, score);
+											console.log("score 3 "+score);
+										}		
+
+										sleep(2000).then(() => {
+											console.log("SLEEP ITEM AHHHH");
+											connection.query('UPDATE jcs_roster SET score = score + ? WHERE id_roster = ?', [score, roster.id_roster], function(err, result){
+												//hue hue 
+												console.log("update score");	
+											});	
+										});*/
+				
 									}
-
-									if(roster.item_2_id != 0){
-										score = score + gestionItem(match, jpms, roster, stat, roster.item_2_id, score);
-									}
-
-									if(roster.item_3_id != 0){
-										score = score + gestionItem(match, jpms, roster, stat, roster.item_3_id, score);
-									}
-
-									connection.query('UPDATE jcs_roster SET score = score + ? WHERE id_roster = ?', [score, roster.id_roster], function(err, result){
-										//hue hue 
-										console.log("update score");	
-									});			
+									else
+									{
+										connection.query('UPDATE jcs_roster SET score = score + ? WHERE id_roster = ?', [score, roster.id_roster], function(err, result){
+											//hue hue 					
+										});		
+									}								
 								});
 							}
 
@@ -1108,7 +1244,7 @@ router.post('/calculscoresession', function(req, res, next)
 							//mise à jour du score de la carte
 							connection.query('UPDATE jcs_carte SET score = score + ? WHERE nom_carte = ?', [scoreCarte, stat.nom_joueur], function(err, result)
 							{
-								console.log("update score carte");
+							
 							});
 						});
 					});
@@ -1121,11 +1257,10 @@ router.post('/calculscoresession', function(req, res, next)
 					if(teamw.length > 0)
 					{
 						teamw.forEach(function (roster) {
-							var score = 5 + roster.rarete_carte;
+							var score = 20 + roster.rarete_carte;
 
 							connection.query('UPDATE jcs_roster SET score = score + ? WHERE id_roster = ?', [score, roster.id_roster], function(err, result){
-								
-								console.log("update score team W");
+										
 							});		
 						});
 					}
@@ -1139,11 +1274,10 @@ router.post('/calculscoresession', function(req, res, next)
 					{
 						teaml.forEach(function (roster) {
 
-							var score = -5 + + roster.rarete_carte;
+							var score = -10 + + roster.rarete_carte;
 
 							connection.query('UPDATE jcs_roster SET score = score + ? WHERE id_roster = ?', [score, roster.id_roster], function(err, result){
-									
-								console.log("update score team L");						
+															
 							});		
 						});
 					}
@@ -1153,42 +1287,6 @@ router.post('/calculscoresession', function(req, res, next)
 
 		sleep(5000).then(() => {
 			res.json({'fin1':'fin1'});
-			connection.release();
-		});
-	});
-});
-
-router.post('/calculscoreevent', function(req, res, next)
-{
-	console.log("calculscoreevent");
-	console.log(req.body.session);
-
-	var id_session = req.body.session; 
-
-	mysqlLib.getConnection(function(err,connection) {
-		if (err) {
-			res.json({"code" : 100, "status" : "Error in connection database : "+err});
-			return;
-		}
-
-		
-
-		connection.query('SELECT * FROM jcs_score WHERE id_session = ?', [id_session], function(err, scores){
-			scores.forEach(function(score){
-				connection.query('SELECT * FROM jcs_roster r INNER JOIN jcs_carte c ON r.id_carte = c.id_carte WHERE r.id_session = ? AND r.id_compte = ? and c.nature_carte = 4', [id_session, score.id_compte], function(err, rosters){
-					if(rosters.length > 0)
-					{
-						gestionEvent(rosters, rosters[0].id_carte, score);
-
-						console.log("gestion event");
-					}
-				});
-			});
-		});
-
-		//à l'aide
-		sleep(5000).then(() => {
-			res.json({'fin2':'fin2'});
 			connection.release();
 		});
 	});
@@ -1215,25 +1313,19 @@ router.post('/calculscorefin', function(req, res, next)
 						scoretot = scoretot + roster.score;
 					});
 
-					console.log("fin roster");
-					console.log(scoretot);
-	
 					connection.query('UPDATE jcs_score SET score_valeur = ? WHERE id_score = ?', [scoretot, score.id_score], function(err, res)
 					{
-						console.log("update score total");
-						console.log(scoretot);
+				
 					});
 
 					connection.query('UPDATE jcs_statsparij SET argent_actuel = argent_actuel + 75 WHERE id_joueur = ?', [score.id_compte], function(err, result){
-						
-						console.log("update argent");
+									
 					});	
 				});
 			});
 
 			connection.query("UPDATE jcs_session SET session_etat = 'Fini' WHERE id_session = ?", [id_session], function(err, res)
-			{
-				console.log("update session");	
+			{	
 			});
 		});	
 		
@@ -1245,8 +1337,156 @@ router.post('/calculscorefin', function(req, res, next)
 	});
 });
 
+router.post('/calculscoreevent', function(req, res, next)
+{
+	console.log("calculscoreevent");
+	console.log(req.body.session);
 
-function gestionItem(match, jpms, roster, stat, id, score)
+	var id_session = req.body.session; 
+
+	mysqlLib.getConnection(function(err,connection) {
+		if (err) {
+			res.json({"code" : 100, "status" : "Error in connection database : "+err});
+			return;
+		}
+
+		
+
+		connection.query('SELECT * FROM jcs_score WHERE id_session = ?', [id_session], function(err, scores){
+			scores.forEach(function(score){
+				connection.query('SELECT * FROM jcs_roster r INNER JOIN jcs_carte c ON r.id_carte = c.id_carte WHERE r.id_session = ? AND r.id_compte = ? and c.nature_carte = 4', [id_session, score.id_compte], function(err, event){
+					if(event.length > 0)
+					{
+						connection.query('SELECT c.poste, r.score, r.id_roster FROM jcs_roster r INNER JOIN jcs_carte c ON r.id_carte = c.id_carte WHERE r.id_session = ? AND r.id_compte = ? and c.nature_carte = 1', [id_session, score.id_compte], function(err, rosters){
+
+						var valscore = 0;
+
+						switch(event[0].id_carte) {
+							case 839 :
+								rosters.forEach(function (item)
+								{
+									if(item.poste == "TOP")
+									{
+										valscore = item.score * 1.5;
+
+										connection.query('UPDATE jcs_roster SET score = ? WHERE id_roster = ?', [valscore, item.id_roster], function(err, result){
+											//hue hue	
+										});		
+									}
+								});
+								break;
+							case 840 :
+								rosters.forEach(function (item)
+								{
+									if(item.poste == "JUNG")
+									{
+										valscore = item.score * 1.5;
+
+										connection.query('UPDATE jcs_roster SET score = ? WHERE id_roster = ?', [valscore, item.id_roster], function(err, result){
+											//hue hue		
+										});	
+									}
+								});
+								break;
+							case 841 :
+								rosters.forEach(function (item)
+								{
+									if(item.poste == "SUPP")
+									{
+										valscore = item.score * 1.5;
+
+										connection.query('UPDATE jcs_roster SET score = ? WHERE id_roster = ?', [valscore, item.id_roster], function(err, result){
+											//hue hue		
+										});	
+									}
+								});
+								break;
+							case 842 :
+								rosters.forEach(function (item)
+								{
+									if(item.poste == "MID")
+									{
+										valscore = item.score * 2;
+
+										connection.query('UPDATE jcs_roster SET score = ? WHERE id_roster = ?', [valscore, item.id_roster], function(err, result){
+											//hue hue		
+										});	
+									}
+								});
+								break;
+							case 843 :
+								rosters.forEach(function (item)
+								{
+									if(item.score < 0)
+									{
+										connection.query('UPDATE jcs_roster SET score = 0 WHERE id_roster = ?', [item.id_roster], function(err, result){
+											//hue hue		
+										});	
+									}
+								});
+								break;
+							case 844 :
+								rosters.forEach(function (item)
+								{
+									valscore = item.score * 1.25;
+
+									connection.query('UPDATE jcs_roster SET score = ? WHERE id_roster = ?', [valscore, item.id_roster], function(err, result){
+										//hue hue 		
+									});			
+								});
+								break;
+							case 845 :
+								rosters.forEach(function (item)
+								{
+									valscore = item.score * 1.07;
+
+									connection.query('UPDATE jcs_roster SET score = ? WHERE id_roster = ?', [valscore, item.id_roster], function(err, result){
+										//hue hue 		
+									});			
+								});
+								break;
+							case 846 :
+								rosters.forEach(function (item)
+								{
+									if(item.poste == "ADC")
+									{						
+										valscore = item.score * 1.5;
+
+										connection.query('UPDATE jcs_roster SET score = ? WHERE id_roster = ?', [valscore, item.id_roster], function(err, result){
+											//hue hue
+										});	
+									}
+								});
+								break;
+							case 847 :
+								rosters.forEach(function (item)
+								{
+									connection.query('UPDATE jcs_roster SET score = score + 3 WHERE id_roster = ?', [item.id_roster], function(err, result){
+										//hue hue 		
+									});	
+								});
+								break;
+							default : 
+								console.log("ce n'est pas sensé arriver");
+							
+						}
+						
+						});	
+					}
+				});
+			});
+		});
+
+		//à l'aide
+		sleep(5000).then(() => {
+			res.json({'fin2':'fin2'});
+			connection.release();
+		});
+	});
+});
+
+
+async function gestionItem(match, jpms, roster, stat, id, score)
 {	
 	var minutes = Math.trunc(match.mat_duree/60);
 	var team = roster.team;
@@ -1284,8 +1524,10 @@ function gestionItem(match, jpms, roster, stat, id, score)
 			}
 			break;
 		case 816 : 
+			console.log("ITEM 816");
 			if(stat.degats > 15500)
 			{
+				console.log("ITEM 816 OUI");
 				score = score + 11;
 			}
 			break;
@@ -1569,133 +1811,9 @@ function gestionItem(match, jpms, roster, stat, id, score)
 
 	}
 
-
 	return score;
-}
+};
 
-function gestionEvent(rosters, id, score)
-{	
-	//doit maj le score des cartes directement???
-	mysqlLib.getConnection(function(err,connection) {
-		if (err) {
-			res.json({"code" : 100, "status" : "Error in connection database : "+err});
-			return;
-		}
-	
-
-	switch(id) {
-		case 839 :
-			rosters.forEach(function (item)
-			{
-				if(item.poste == "TOP")
-				{
-					score = item.score * 1.5;
-
-					connection.query('UPDATE jcs_roster SET score = ? WHERE id_roster = ?', [score, item.id_roster], function(err, result){
-						connection.close();			
-					});		
-				}
-			});
-			break;
-		case 840 :
-			rosters.forEach(function (item)
-			{
-				if(item.poste == "JUNG")
-				{
-					score = item.score * 1.5;
-
-					connection.query('UPDATE jcs_roster SET score = ? WHERE id_roster = ?', [score, item.id_roster], function(err, result){
-						connection.close();			
-					});	
-				}
-			});
-			break;
-		case 841 :
-			rosters.forEach(function (item)
-			{
-				if(item.poste == "SUPP")
-				{
-					score = item.score * 1.5;
-
-					connection.query('UPDATE jcs_roster SET score = ? WHERE id_roster = ?', [score, item.id_roster], function(err, result){
-						connection.close();			
-					});	
-				}
-			});
-			break;
-		case 842 :
-			rosters.forEach(function (item)
-			{
-				if(item.poste == "MID")
-				{
-					score = item.score * 2;
-
-					connection.query('UPDATE jcs_roster SET score = ? WHERE id_roster = ?', [score, item.id_roster], function(err, result){
-						connection.close();			
-					});	
-				}
-			});
-			break;
-		case 843 :
-			rosters.forEach(function (item)
-			{
-				if(item.score < 0)
-				{
-					connection.query('UPDATE jcs_roster SET score = 0 WHERE id_roster = ?', [item.id_roster], function(err, result){
-						connection.close();			
-					});	
-				}
-			});
-			break;
-		case 844 :
-			rosters.forEach(function (item)
-			{
-				score = item.score * 1.25;
-
-				connection.query('UPDATE jcs_roster SET score = ? WHERE id_roster = ?', [score, item.id_roster], function(err, result){
-					//hue hue 		
-				});			
-			});
-			break;
-		case 845 :
-			rosters.forEach(function (item)
-			{
-				score = item.score * 1.07;
-
-				connection.query('UPDATE jcs_roster SET score = ? WHERE id_roster = ?', [score, item.id_roster], function(err, result){
-					//hue hue 		
-				});			
-			});
-			break;
-		case 846 :
-			rosters.forEach(function (item)
-			{
-				if(item.poste == "ADC")
-				{
-					score = item.score * 1.5;
-
-					connection.query('UPDATE jcs_roster SET score = score + ? WHERE id_roster = ?', [score, item.id_roster], function(err, result){
-						connection.close();			
-					});	
-				}
-			});
-			break;
-		case 847 :
-			rosters.forEach(function (item)
-			{
-				connection.query('UPDATE jcs_roster SET score = score + 3 WHERE id_roster = ?', [item.id_roster], function(err, result){
-					//hue  hue 		
-				});	
-			});
-			break;
-		default : 
-			console.log("ce n'est pas sensé arriver");
-		
-		}
-
-	});
-	return score;
-}
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));

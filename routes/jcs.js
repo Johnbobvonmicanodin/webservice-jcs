@@ -580,6 +580,7 @@ router.post('/ajoutjoueur', function (req, res, next) {
         let pseudo = req.body.pseudo;
         let structure = req.body.structure;
         let saison = req.body.saison;
+        let pseudolol = req.body.pseudolol;
 
         mysqlLib.getConnection(function (err, connection) {
             if (err) {
@@ -587,8 +588,8 @@ router.post('/ajoutjoueur', function (req, res, next) {
                 return;
             }
 
-            connection.query("insert into jcs_joueur (jou_name, jou_teamid, jou_kills, jou_deaths, jou_assists, jou_gold, jou_damage, jou_vision, jou_saison, jou_tempsdejeu)"
-                + "values (?,?,0,0,0,0,0,0,?,0)", [pseudo, structure, saison], function (err, data) {
+            connection.query("insert into jcs_joueur (jou_name, jou_invocateur, jou_teamid, jou_kills, jou_deaths, jou_assists, jou_gold, jou_damage, jou_vision, jou_saison, jou_tempsdejeu)"
+                + "values (?,?,?,0,0,0,0,0,0,?,0)", [pseudo, pseudolol, structure, saison], function (err, data) {
                 connection.release();
                 if (!err) {
                     res.json({"sucess": "oui"});
