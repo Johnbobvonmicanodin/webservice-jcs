@@ -310,7 +310,7 @@ router.post('/deletecard', function(req, res, next){
 		connection.query('DELETE FROM jcs_carte WHERE nom_carte = ? and ligue = ? and saison = ?',[nom_carte, ligue, saison],function(err, result) {
 			connection.release();
 			if (!err) {				
-				res.json({'success':true});						
+				res.json({'success':true});					
 			}      
 			else {
 				res.status(200).send({code:200, error: "erreur, la suppression des cartes a echoué"});
@@ -348,6 +348,7 @@ router.post('/modifycard', function(req, res, next){
 				connection.query('update jcs_carte set effet_carte = ?, prix = ?, score = ?  where id_carte = ?', [effet_carte, prix, score, id], function(err, result){
 						if(!err){
 							response.push({'passe' : 'success'});
+							connection.release();
 						}			
 				});			
 			
@@ -374,7 +375,7 @@ router.post('/cardsforaname', function(req, res, next){
 				connection.query('SELECT * FROM jcs_carte where nom_carte = ? and ligue = ? and saison = ?',[nom_carte, ligue, saison], function(err, result) {
 					connection.release();
 					if (!err) {				
-						res.json(result);						
+						res.json(result);					
 					}      
 					else {
 						res.status(200).send({code:200, error: "erreur dans l'accès aux cartes"});
@@ -454,7 +455,7 @@ router.post('/rosterjoueur', function(req, res, next){
 			connection.query('SELECT * FROM jcs_roster r INNER JOIN jcs_carte c ON r.id_carte = c.id_carte where r.id_session = ? and r.id_compte = ? and r.ligue = ? and r.saison = ?',[id_session, id_compte, ligue, saison], function(err, result) {
 				connection.release();
 				if (!err) {				
-					res.json(result);						
+					res.json(result);					
 				}      
 				else {
 					res.status(200).send({code:200, error: "erreur dans l'accès aux rosters"});
@@ -487,7 +488,7 @@ router.post('/allrosterjoueur', function(req, res, next){
 			connection.query('SELECT * FROM jcs_roster where id_compte = ? and ligue = ? and saison = ?',[id_compte, ligue, saison], function(err, result) {
 				connection.release();
 				if (!err) {				
-					res.json(result);						
+					res.json(result);					
 				}      
 				else {
 					res.status(200).send({code:200, error: "erreur dans l'accès aux rosters"});
@@ -558,7 +559,7 @@ router.post('/deleteallcardroster', function(req, res, next){
 		connection.query('DELETE FROM jcs_roster WHERE id_compte = ? AND id_session = ?',[id_compte, id_session],function(err, result) {
 			connection.release();
 			if (!err) {				
-				res.json({'success':true});						
+				res.json({'success':true});					
 			}      
 			else {
 				res.status(200).send({code:200, error: "erreur, la suppression de la carte du roster a échoué"});
@@ -596,6 +597,7 @@ router.post('/updateroster', function(req, res, next){
 			connection.query('update jcs_roster set item_1_id = ?, item_2_id = ?, item_3_id = ? where id_roster = ?', [item_1_id, item_2_id, item_3_id, id_roster], function(err, result){
 					if(!err){
 						response.push({'success' : true});
+						connection.release();
 					}			
 			});			
 		
@@ -632,7 +634,6 @@ router.post('/addsession', function(req, res, next){
 			connection.query('INSERT INTO jcs_session (semaine, date_session, date_fin, ligue, saison) VALUES (?,?,?,?,?)', [semaine,date,date_fin,ligue,saison], function(err, result) {
 				connection.release();						
 				if (!err) {
-			
 					res.json({'success':true});
 				}      
 				else {
@@ -674,10 +675,9 @@ router.post('/getsession', function(req, res, next){
 
 		
 			connection.query('SELECT * FROM jcs_session WHERE ligue = ? AND saison = ? AND date_fin >= NOW() ORDER BY id_session DESC LIMIT 1', [ligue,saison], function(err, result) {
-				connection.release();
-					
+				connection.release();			
 				if (result.length > 0) {			
-					res.json(result[0]);			
+					res.json(result[0]);		
 				}      
 				else {
 					res.status(200).send({code:200, error: "pas de session en cours"});
@@ -715,7 +715,7 @@ router.post('/getallsession', function(req, res, next){
 				connection.release();
 					
 				if (result.length > 0) {			
-					res.json(result);			
+					res.json(result);		
 				}      
 				else {
 					res.status(200).send({code:200, error: "pas de session"});
@@ -757,8 +757,7 @@ router.post('/addscore', function(req, res, next){
 			connection.query('INSERT INTO jcs_score (id_compte, id_session, score_valeur) VALUES (?,?,?)', [id_compte,id_session,score_valeur], function(err, result) {
 				connection.release();						
 				if (!err) {
-			
-					res.json({'success':true});
+					res.json({'success':true});			
 				}      
 				else {
 					res.status(200).send({code:200, error: "erreur dans l'ajout du score"});
@@ -794,6 +793,7 @@ router.post('/updatescore', function(req, res, next){
 				connection.query('update jcs_score set score_valeur = ? where id_score = ?', [score_valeur, id], function(err, result){
 						if(!err){
 							response.push({'success' : true});
+							connection.release();
 						}			
 				});			
 			
@@ -822,10 +822,12 @@ router.post('/getscore', function(req, res, next){
 							if(result[0] === undefined)	
 							{
 								res.json({'success':false});
+								connection.release();
 							}
 							else
 							{
 								res.json({'success':true});
+								connection.release();
 							}				
 						}	
 						else
@@ -853,6 +855,7 @@ router.post('/getallscore', function(req, res, next){
 				connection.query('select * from jcs_score where id_compte = ?', [id_compte], function(err, result){
 						if(!err){
 							response.push(result);
+							connection.release();
 						}			
 				});			
 			
@@ -880,6 +883,7 @@ router.post('/getallscore', function(req, res, next){
 								+" WHERE p.ligue = ? AND p.saison = ? GROUP BY s.id_compte", [ligue, saison], function(err, result){
 						if(!err){
 							response.push(result);
+							connection.release();
 						}			
 				});			
 			
@@ -908,6 +912,7 @@ router.post('/getallscore', function(req, res, next){
 								+" WHERE p.ligue = ? AND p.saison = ? AND p.id_session = ?", [ligue, saison, session], function(err, result){
 						if(!err){
 							response.push(result);
+							connection.release();
 						}			
 				});			
 			
@@ -941,8 +946,7 @@ router.post('/addcardplayer', function(req, res, next){
 			connection.query('INSERT INTO jcs_cartes_player (id_compte, id_carte, ligue, saison) VALUES (?,?,?,?)', [id_compte,id_carte,ligue,saison], function(err, result) {
 				connection.release();						
 				if (!err) {
-			
-					res.json({'success':true});
+					res.json({'success':true});	
 				}      
 				else {
 					res.status(200).send({code:200, error: "erreur dans l'ajoute d'une carte"});
@@ -986,7 +990,7 @@ router.post('/deckjoueur', function(req, res, next){
 			connection.query('SELECT * FROM jcs_cartes_player p INNER JOIN jcs_carte c ON p.id_carte = c.id_carte where p.id_compte = ? and p.ligue = ? and p.saison = ? and c.nature_carte = ?',[id_compte, ligue, saison, type], function(err, result) {
 				connection.release();
 				if (!err) {				
-					res.json(result);						
+					res.json(result);					
 				}      
 				else {
 					res.status(200).send({code:200, error: "erreur dans l'accès au deck"});
@@ -1021,7 +1025,7 @@ router.post('/deckcarteunique', function(req, res, next){
 			connection.query('SELECT * FROM jcs_cartes_player WHERE id_compte = ? AND id_carte = ? AND ligue = ? AND saison = ?',[id_compte, id_carte, ligue, saison], function(err, result) {
 				connection.release();
 				if (result.length > 0) {			
-					res.json({'trouve':true});				
+					res.json({'trouve':true});						
 				}      
 				else {
 					res.json({'trouve':false});
@@ -1057,7 +1061,7 @@ router.post('/listenonpossession', function(req, res, next){
 			+' MINUS SELECT * FROM jcs_cartes_player p INNER JOIN jcs_carte c ON p.id_carte = c.id_carte where p.id_compte = ? and p.ligue = ? and p.saison = ?',[id_compte, ligue, saison, type], function(err, result) {
 				connection.release();
 				if (!err) {				
-					res.json(result);						
+					res.json(result);							
 				}      
 				else {
 					res.status(200).send({code:200, error: "erreur dans l'accès au deck"});
@@ -1090,6 +1094,7 @@ router.post('/minusmoney', function(req, res, next){
 				connection.query('UPDATE jcs_statsparij SET argent_actuel = argent_actuel - ? WHERE id_joueur = ?', [argent, id], function(err, result){
 						if(!err){
 							response.push({'update' : 'success'});
+							connection.release();
 						}			
 				});			
 			
@@ -1115,6 +1120,7 @@ router.post('/plusmoney', function(req, res, next){
 				connection.query('UPDATE jcs_statsparij SET argent_actuel = argent_actuel + ? WHERE id_joueur = ?', [argent, id], function(err, result){
 						if(!err){
 							response.push({'update' : 'success'});
+							connection.release();
 						}			
 				});			
 			
@@ -1196,8 +1202,7 @@ router.post('/calculscoresession', function(req, res, next)
 											});									
 										});
 
-										gestionDesItems.then((value) => {
-											console.log("score item finaux : "+ score);
+										gestionDesItems.then((value) => {				
 											connection.query('UPDATE jcs_roster SET score = score + ? WHERE id_roster = ?', [score, roster.id_roster], function(err, result){
 												//hue hue 										
 											});	
@@ -1251,9 +1256,7 @@ router.post('/calculscoresession', function(req, res, next)
 				});
 
 				connection.query('SELECT * FROM jcs_roster r INNER JOIN jcs_carte c ON r.id_carte = c.id_carte WHERE r.id_session = ? and r.ligue = ? and r.saison = ? and c.team = ? and c.nature_carte = 2', [id_session, ligue, saison, match.mat_idgagnant], function(err, teamw)
-				{
-					console.log("teamW");
-
+				{		
 					if(teamw.length > 0)
 					{
 						teamw.forEach(function (roster) {
@@ -1268,8 +1271,6 @@ router.post('/calculscoresession', function(req, res, next)
 
 				connection.query('SELECT * FROM jcs_roster r INNER JOIN jcs_carte c ON r.id_carte = c.id_carte WHERE r.id_session = ? and r.ligue = ? and r.saison = ? and c.team = ? and c.nature_carte = 2', [id_session, ligue, saison, match.mat_idperdant], function(err, teaml)
 				{
-					console.log("teamL");
-				
 					if(teaml.length > 0)
 					{
 						teaml.forEach(function (roster) {
@@ -1295,8 +1296,6 @@ router.post('/calculscoresession', function(req, res, next)
 router.post('/calculscorefin', function(req, res, next)
 {
 	var id_session = req.body.session; 
-
-	console.log("calculscorefin");
 
 	mysqlLib.getConnection(function(err,connection) {
 		if (err) {
@@ -1339,9 +1338,6 @@ router.post('/calculscorefin', function(req, res, next)
 
 router.post('/calculscoreevent', function(req, res, next)
 {
-	console.log("calculscoreevent");
-	console.log(req.body.session);
-
 	var id_session = req.body.session; 
 
 	mysqlLib.getConnection(function(err,connection) {
@@ -1349,8 +1345,6 @@ router.post('/calculscoreevent', function(req, res, next)
 			res.json({"code" : 100, "status" : "Error in connection database : "+err});
 			return;
 		}
-
-		
 
 		connection.query('SELECT * FROM jcs_score WHERE id_session = ?', [id_session], function(err, scores){
 			scores.forEach(function(score){
